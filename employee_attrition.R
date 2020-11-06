@@ -9,6 +9,7 @@ library(tidyverse)
 library(caret)
 library(e1071)
 
+#new iline
 employee_dataset <- read.csv("employee-attrition.csv")
 
 #remove columns not need
