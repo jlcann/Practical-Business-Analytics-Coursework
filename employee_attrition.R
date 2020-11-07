@@ -1,6 +1,8 @@
 library(dplyr)
 library(tidyverse)
 library(caret)
+library(keras)
+library(RSNNS)
 
 # load the dataset
 employee_dataset <- read.csv("employee-attrition.csv")
@@ -47,3 +49,19 @@ dataBeforeNormalisation <- df_all_combined_train %>% mutate(MonthlyIncome = case
                                                                    MonthlyIncome > 12500   & MonthlyIncome <= 15000 ~ 6,
                                                                    MonthlyIncome > 15000   & MonthlyIncome <= 17500 ~ 7,
                                                                    MonthlyIncome > 17500   & MonthlyIncome <= 20000 ~ 8)) # end function
+#tmp <- normalize(dataBeforeNormalisation)
+
+# (Values - Minimum) / (Maximum - Minimum)
+# Normalise Data - our own function 
+normalise <- function(values) {
+  return ((values - min(values)) / (max(values) - min(values)))
+}
+normalisedDataset <- as.data.frame(lapply(dataBeforeNormalisation,normalise))
+
+#Denormalise Dataset - This is not needed yet, just for reference
+minvec <- sapply(dataBeforeNormalisation,min)
+maxvec <- sapply(dataBeforeNormalisation,max)
+denormalize <- function(x,minval,maxval) {
+  x*(maxval-minval) + minval
+}
+denormalzedDataset <- as.data.frame(Map(denormalize,ddnorm,minvec,maxvec))
