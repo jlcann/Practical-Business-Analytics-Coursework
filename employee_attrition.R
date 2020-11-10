@@ -77,15 +77,15 @@ main<-function(){
   #print(paste("SYMBOLIC Fields =", length(symbolic_fields)))
   #print(symbolic_fields)
 
-  discreetDataset <- NPREPROCESSING_discreetNumeric(originalDataSet,field_types,DISCREET_BINS)
-  discreet_fields <- names(originalDataSet)[discreetDataset=="DISCREET"]
+  field_Types_Discreet_Ordinal<- NPREPROCESSING_discreetNumeric(originalDataSet,field_types,DISCREET_BINS)
+  discreet_fields <- names(originalDataSet)[field_Types_Discreet_Ordinal=="DISCREET"]
   #print(paste("Discreet Fields =", length(discreet_fields)))
   #print(discreet_fields)
   
-  results<-data.frame(field=names(originalDataSet),initial=field_types,types1=discreetDataset)
+  results<-data.frame(field=names(originalDataSet),initial=field_types,field_Types_Discreet_Ordinal=field_Types_Discreet_Ordinal)
   print(formattable::formattable(results))
   
-  datasetOrdinals <- NPREPROCESSING_outlier(originalDataSet[,which(discreetDataset==TYPE_ORDINAL)], OUTLIER_CONFIDENCE)
+  datasetOrdinals <- NPREPROCESSING_outlier(originalDataSet[,which(field_Types_Discreet_Ordinal==TYPE_ORDINAL)], OUTLIER_CONFIDENCE)
   
   print("Leaving main")
   
