@@ -117,7 +117,7 @@ basicStatistics<-function(dataset,...){
 # OUTPUT : None
 # ************************************************
 # ************************************************
-# NPREPROCESSING_initialFieldType() :
+# FieldTypes() :
 #
 # Test each field for NUMERIC or SYNBOLIC
 #
@@ -125,7 +125,7 @@ basicStatistics<-function(dataset,...){
 #
 # OUTPUT : Vector - Vector of types {NUMERIC, SYMBOLIC}
 # ************************************************
-NPREPROCESSING_initialFieldType<-function(dataset){
+FieldTypes<-function(dataset){
   
   field_types<-vector()
   for(field in 1:(ncol(dataset))){
@@ -143,5 +143,83 @@ NPREPROCESSING_initialFieldType<-function(dataset){
       field_types[field]<-TYPE_SYMBOLIC
     }
   }
+  return(field_types)
+}
+
+
+# ************************************************
+# rescaleField() :
+#
+# Rescale an numeric field to be between 0-1.
+#
+# INPUT: Vector to rescale
+#
+# OUTPUT : Vector scaled between 0,1
+# ************************************************
+
+rescaleField<-function(input){
+  return((input-min(input))/(max(input)-min(input)))
+}
+
+
+# ************************************************
+# NPREPROCESSING_discreetNumeric() :
+#
+# Test NUMERIC field if DISCREET or ORDINAL
+#
+# INPUT: data frame      - dataset     - input data
+#        vector strings  - field_types - Types per field, either {NUMERIC, SYMBOLIC}
+#        int             - cutoff      - Number of empty bins needed to determine discreet (1-10)
+#
+# OUTPUT : vector strings - Updated with types per field {DISCREET, ORDINAL}
+# ************************************************
+# Uses histogram
+# Plots histogram for visulisation
+# ************************************************
+NPREPROCESSING_discreetNumeric<-function(dataset,field_types,cutoff){
+  
+  #For every field in our dataset
+  for(field in 1:(ncol(dataset))){
+    
+    #Only for fields that are all numeric
+    if (field_types[field]==TYPE_NUMERIC) {
+      
+      #Scale the whole field (column) to between 0 and 1
+      scaled_column<-rescaleField(dataset[,field])
+      
+      #Generate the "cutoff" points for each of 10 bins
+      #so we will get 0-0.1, 0.1-0.2...0.9-1.0
+      cutpoints<-seq(0,1,length=11)
+      
+      #This creates an empty vector that will hold the counts of ther numbers in the bin range
+      bins<-vector()
+      
+      #Now we count how many numbers fall within the range
+      #length(...) is used to count the numbers that fall within the conditional
+      for (i in 2:11){
+        bins<-append(bins,length(scaled_column[(scaled_column<=cutpoints[i])&(scaled_column>cutpoints[i-1])]))
+      }
+      
+      # the 10 bins will have a % value of the count (i.e. density)
+      bins<-(bins/length(scaled_column))*100.0
+      
+      graphTitle<-"AUTO:"
+      
+      #If the number of bins with less than 1% of the values is greater than the cutoff
+      #then the field is deterimed to be a discreet value
+      
+      if (length(which(bins<1.0))>cutoff)
+        field_types[field]<-TYPE_DISCREET
+      else
+        field_types[field]<-TYPE_ORDINAL
+      
+      barplot(bins, main=paste(graphTitle,field_types[field]),
+                       xlab=names(dataset[field]),
+                       names.arg = 1:10,bty="n")
+      #Bar chart helps visulisation. Type of field is the chart name
+        
+      
+    } #endif numeric types
+  } #endof for
   return(field_types)
 }

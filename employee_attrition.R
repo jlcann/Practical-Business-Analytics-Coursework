@@ -55,7 +55,7 @@ main<-function(){
   print(DATASET_FILENAME)
   
   #Load the dataset into a variable named originalDataSet.
-  originalDataSet <- readDataset(DATASET_FILENAME)
+  
   
   #Do you have unexpected field names or data? There are some complexities when loading text from different systems,
   #e.g. Windows PC or Mac, where characters are “encoded” differently. You may want to search google on “UTF-8” if you
@@ -67,16 +67,20 @@ main<-function(){
   basicStatistics(originalDataSet)
   
   
-  field_types<-NPREPROCESSING_initialFieldType(originalDataSet)
+  field_types<-FieldTypes(originalDataSet)
 
-  numeric_fields <- names(originalDataSet)[field_types=="NUMERIC"]
-  print(paste("Numeric Fields =", length(numeric_fields)))
-  print(numeric_fields)
-  symbolic_fields <- names(originalDataSet)[field_types=="SYMBOLIC"]
-  print(paste("SYMBOLIC Fields =", length(symbolic_fields)))
-  print(symbolic_fields)
+  #numeric_fields <- names(originalDataSet)[field_types=="NUMERIC"]
+  #print(paste("Numeric Fields =", length(numeric_fields)))
+  #print(numeric_fields)
+  #symbolic_fields <- names(originalDataSet)[field_types=="SYMBOLIC"]
+  #print(paste("SYMBOLIC Fields =", length(symbolic_fields)))
+  #print(symbolic_fields)
 
+  discreetDataset <- NPREPROCESSING_discreetNumeric(originalDataSet,field_types,DISCREET_BINS)
   
+  discreet_fields <- names(originalDataSet)[discreetDataset=="DISCREET"]
+  print(paste("Discreet Fields =", length(discreet_fields)))
+  print(discreet_fields)
   print("Leaving main")
   
 } #endof main()
@@ -94,5 +98,5 @@ source("employee_attrition_functions.R")
 
 set.seed(123)
 
-
+originalDataSet <- readDataset(DATASET_FILENAME)
 main()
