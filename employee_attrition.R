@@ -81,6 +81,18 @@ oneHotEncoding<-function(...){
   return(newData)
 }
 
+# ************************************************
+# normalise() :
+#   Normalise fields between 1 and 0
+#
+# INPUT       :   Fields to normalise
+#
+# OUTPUT      :   Normalised fields between 1 and 0
+# ************************************************
+normalise <- function(values) {
+  return ((values - min(values)) / (max(values) - min(values)))
+}
+
 
 # ************************************************
 # main() :
@@ -167,6 +179,9 @@ main<-function(){
   # remove highly correlated fields
   dataForNormalisation <- dataBeforeNormalisation[, -which(colnames(dataBeforeNormalisation) %in% highlyCorCol)]
   dim(dataForNormalisation)
+  
+  # normalise dataset using function above
+  normalisedDataset <- as.data.frame(lapply(dataBeforeNormalisation,normalise))
   
   print("Leaving main")
   
