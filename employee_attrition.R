@@ -13,6 +13,7 @@ TYPE_SYMBOLIC     <- "SYMBOLIC"           # field is a string
 TYPE_NUMERIC      <- "NUMERIC"            # field is initially a numeric
 TYPE_IGNORE       <- "IGNORE"             # field is not encoded
 DISCREET_BINS     <- 5                    # Number of Discreet Bins Required for 
+OUTLIER_CONFIDENCE <- 0.99             # 
 
 
 
@@ -77,10 +78,15 @@ main<-function(){
   #print(symbolic_fields)
 
   discreetDataset <- NPREPROCESSING_discreetNumeric(originalDataSet,field_types,DISCREET_BINS)
-  
   discreet_fields <- names(originalDataSet)[discreetDataset=="DISCREET"]
-  print(paste("Discreet Fields =", length(discreet_fields)))
-  print(discreet_fields)
+  #print(paste("Discreet Fields =", length(discreet_fields)))
+  #print(discreet_fields)
+  
+  results<-data.frame(field=names(originalDataSet),initial=field_types,types1=discreetDataset)
+  print(formattable::formattable(results))
+  
+  datasetOrdinals <- NPREPROCESSING_outlier(originalDataSet[,which(discreetDataset==TYPE_ORDINAL)], OUTLIER_CONFIDENCE)
+  
   print("Leaving main")
   
 } #endof main()
@@ -99,4 +105,4 @@ source("employee_attrition_functions.R")
 set.seed(123)
 
 originalDataSet <- readDataset(DATASET_FILENAME)
-main()
+test <- main()
