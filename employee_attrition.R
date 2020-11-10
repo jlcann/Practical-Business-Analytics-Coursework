@@ -71,10 +71,26 @@ oneHotEncoding<-function(...){
   return(newData)
 }
 
-oneHotDataset<-oneHotEncoding(employee_dataset['Gender'],employee_dataset['OverTime'])
+# One hot encode all fields listed
+oneHotDataset<-oneHotEncoding(employee_dataset['Gender'],employee_dataset['OverTime'],
+                              employee_dataset['Attrition'],employee_dataset['MaritalStatus'])
 
-newdf <- oneHotDataset %>% mutate(across(c(Attrition, BusinessTravel, Department, EducationField, JobRole, MaritalStatus, Over18),
+newdf <- oneHotDataset %>% mutate(across(c(BusinessTravel, Department, JobRole, EducationField),
                                          ~as.numeric(as.factor(.))))
+
+# Create Bins and complete dataset before normalisation
+dataBeforeNormalisation <- newdf %>% mutate(MonthlyIncome = case_when(MonthlyIncome <= 2500 ~ 1,
+                                                                      MonthlyIncome > 2500   & MonthlyIncome <= 5000 ~ 2,
+                                                                      MonthlyIncome > 5000   & MonthlyIncome <= 7500 ~ 3,
+                                                                      MonthlyIncome > 7500   & MonthlyIncome <= 10000 ~ 4,
+                                                                      MonthlyIncome > 10000   & MonthlyIncome <= 12500 ~ 5,
+                                                                      MonthlyIncome > 12500   & MonthlyIncome <= 15000 ~ 6,
+                                                                      MonthlyIncome > 15000   & MonthlyIncome <= 17500 ~ 7,
+                                                                      MonthlyIncome > 17500   & MonthlyIncome <= 20000 ~ 8)) # end function
+
+if(all(sapply(dataBeforeNormalisation, is.numeric ))){
+  print("All Fields Are Numeric")
+}
 
 ###########################################################################################################################################################################
 # main() function
@@ -116,7 +132,7 @@ main()
 # OHE -> Overtime 
 # Over18 < 1
           # newdf <- employee_dataset %>% mutate(across(c(Attrition, BusinessTravel, Department, EducationField, JobRole, MaritalStatus, Over18),
-          #                                             ~as.numeric(as.factor(.))))
+          #                                             ~as.numeric(as.factor(.)))) DONE
           # 
           # #One hot encoding done here. DONE
           # ohe_feats_train = c('Gender', 'OverTime') DONE
@@ -124,7 +140,7 @@ main()
           # df_all_ohe_train <- as.data.frame(predict(dummies_train, newdata = newdf)) DONE
           # df_all_combined_train <- cbind(newdf[,-c(which(colnames(newdf) %in% ohe_feats_train))],df_all_ohe_train) DONE
           # 
-          # # Create Bins and complete dataset before normalisation
+          # # Create Bins and complete dataset before normalisation DONE
           # dataBeforeNormalisation <- df_all_combined_train %>% mutate(MonthlyIncome = case_when(MonthlyIncome <= 2500 ~ 1,
           #                                                                                       MonthlyIncome > 2500   & MonthlyIncome <= 5000 ~ 2,
           #                                                                                       MonthlyIncome > 5000   & MonthlyIncome <= 7500 ~ 3,
@@ -136,7 +152,7 @@ main()
           # 
           # if(all(sapply(dataBeforeNormalisation, is.numeric ))){
           #   print("All Fields Are Numeric")
-          # }
+          # } DONE
 
 
 ###########################################################################################################################################################################
