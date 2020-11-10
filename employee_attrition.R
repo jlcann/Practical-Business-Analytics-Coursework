@@ -36,8 +36,50 @@ MYLIBRARIES<-c("outliers",
                "PerformanceAnalytics",
                "caret")
 
+# clears the console area
+cat("\014")
 
+# Loads the libraries
+library(pacman)
+pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
 
+#Load additional R script files provide for this lab
+source("employee_attrition_functions.R")
+
+set.seed(123)
+
+# originalDataSet <- readDataset(DATASET_FILENAME)
+originalDataset <- read.csv("employee-attrition.csv")
+
+# ************************************************
+# GLOBAL FUNCTIONS
+
+# ************************************************
+# oneHotEncoding() :
+#   Pre-processing method to convert appropriate 
+#   categorical fields into binary representation
+#
+# INPUT       :   Categoric fields to encode
+#
+# OUTPUT      :   Encoded fields
+# ************************************************
+oneHotEncoding<-function(...){
+  # Combine input fields for encoding
+  fieldsForEncoding = c(...)
+  
+  # One hot encode fields listed in function
+  dmy <- dummyVars(" ~ .", data = fieldsForEncoding)
+  trsf<- data.frame(predict(dmy, newdata = originalDataset))
+  
+  # Combine the encoded fields back to the originalDataset
+  encodedDataset <- cbind(originalDataset,trsf)
+  
+  # Remove original fields that have been hot encoded
+  newData <- subset(encodedDataset, select = -c(Gender, OverTime, Attrition, MaritalStatus)) # LOOK AT THIS 
+  
+  # Return new dataset
+  return(newData)
+}
 
 
 # ************************************************
@@ -66,44 +108,34 @@ main<-function(){
   #collected on different IT systems, maybe in different counties and what might be involved to get this data into a format that you
   #can use for ML.
   #Print statistics of originalDataSet into the viewer.
-  basicStatistics(originalDataSet)
+  basicStatistics(originalDataset)
   
   # Determine if fields are SYMBOLIC or NUMERIC
-  field_types<-FieldTypes(originalDataSet)
+  field_types<-FieldTypes(originalDataset)
 
   # Determine if NUMERIC fields are DISCREET or ORDINAL
-  field_Types_Discreet_Ordinal<- NPREPROCESSING_discreetNumeric(originalDataSet,field_types,DISCREET_BINS)
-  discreet_fields <- names(originalDataSet)[field_Types_Discreet_Ordinal=="DISCREET"]
+  field_Types_Discreet_Ordinal<- NPREPROCESSING_discreetNumeric(originalDataset,field_types,DISCREET_BINS)
+  discreet_fields <- names(originalDataset)[field_Types_Discreet_Ordinal=="DISCREET"]
   
-  results<-data.frame(field=names(originalDataSet),initial=field_types,types1=field_Types_Discreet_Ordinal)
+  results<-data.frame(field=names(originalDataset),initial=field_types,types1=field_Types_Discreet_Ordinal)
   print(formattable::formattable(results))
   
   # Ordinals subset
-  ordinals<-originalDataSet[,which(field_Types_Discreet_Ordinal==TYPE_ORDINAL)]
+  ordinals<-originalDataset[,which(field_Types_Discreet_Ordinal==TYPE_ORDINAL)]
   
   # Test if any ordinals are outliers and replace with mean values
   datasetOrdinals <- NPREPROCESSING_outlier(ordinals = ordinals, OUTLIER_CONFIDENCE)
   
+  # One hot encode the following fields: Gender, OverTime, Attrition, MaritalStatus
+  oneHotDataset <- oneHotEncoding(originalDataset['Gender'],originalDataset['OverTime'],
+                                  originalDataset['Attrition'],originalDataset["MaritalStatus"])
   
+  # Create factors for ordered categorical fields
+  newdf <- oneHotDataset
   
   print("Leaving main")
   
 } #endof main()
-
-
-# clears the console area
-cat("\014")
-
-# Loads the libraries
-library(pacman)
-pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
-
-#Load additional R script files provide for this lab
-source("employee_attrition_functions.R")
-
-set.seed(123)
-
-originalDataSet <- readDataset(DATASET_FILENAME)
 
 main()
 
