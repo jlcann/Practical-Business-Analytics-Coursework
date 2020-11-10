@@ -13,6 +13,8 @@ TYPE_SYMBOLIC     <- "SYMBOLIC"           # field is a string
 TYPE_NUMERIC      <- "NUMERIC"            # field is initially a numeric
 TYPE_IGNORE       <- "IGNORE"             # field is not encoded
 DISCREET_BINS     <- 5                    # Number of Discreet Bins Required for 
+OUTLIER_CONFIDENCE <- 0.99                # Confidence of discreet 
+
 
 
 
@@ -66,21 +68,24 @@ main<-function(){
   #Print statistics of originalDataSet into the viewer.
   basicStatistics(originalDataSet)
   
-  
+  # Determine if fields are SYMBOLIC or NUMERIC
   field_types<-FieldTypes(originalDataSet)
 
-  #numeric_fields <- names(originalDataSet)[field_types=="NUMERIC"]
-  #print(paste("Numeric Fields =", length(numeric_fields)))
-  #print(numeric_fields)
-  #symbolic_fields <- names(originalDataSet)[field_types=="SYMBOLIC"]
-  #print(paste("SYMBOLIC Fields =", length(symbolic_fields)))
-  #print(symbolic_fields)
-
-  discreetDataset <- NPREPROCESSING_discreetNumeric(originalDataSet,field_types,DISCREET_BINS)
+  # Determine if NUMERIC fields are DISCREET or ORDINAL
+  field_Types_Discreet_Ordinal<- NPREPROCESSING_discreetNumeric(originalDataSet,field_types,DISCREET_BINS)
+  discreet_fields <- names(originalDataSet)[field_Types_Discreet_Ordinal=="DISCREET"]
   
-  discreet_fields <- names(originalDataSet)[discreetDataset=="DISCREET"]
-  print(paste("Discreet Fields =", length(discreet_fields)))
-  print(discreet_fields)
+  results<-data.frame(field=names(originalDataSet),initial=field_types,types1=field_Types_Discreet_Ordinal)
+  print(formattable::formattable(results))
+  
+  # Ordinals subset
+  ordinals<-originalDataSet[,which(field_Types_Discreet_Ordinal==TYPE_ORDINAL)]
+  
+  # Test if any ordinals are outliers and replace with mean values
+  datasetOrdinals <- NPREPROCESSING_outlier(ordinals = ordinals, OUTLIER_CONFIDENCE)
+  
+  
+  
   print("Leaving main")
   
 } #endof main()
@@ -99,4 +104,6 @@ source("employee_attrition_functions.R")
 set.seed(123)
 
 originalDataSet <- readDataset(DATASET_FILENAME)
+
 main()
+
