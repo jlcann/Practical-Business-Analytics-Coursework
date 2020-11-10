@@ -28,7 +28,11 @@ MYLIBRARIES <-c("outliers",
                 "formattable",
                 "stats",
                 "PerformanceAnalytics",
-                "caret")
+                "caret",
+                "dplyr",
+                "tidyverse",
+                "keras",
+                "RSNNS")
 
 library(pacman)
 pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
@@ -58,8 +62,8 @@ print("Dataset is in a frame titled employee_dataset")
 # Output :
 #   Encoded copy of input fields
 # ***********************************************************
-oneHotEncoding<-function(inputField1,inputField2){
-  fieldsForEncoding = c(inputField1, inputField2)
+oneHotEncoding<-function(...){
+  fieldsForEncoding = c(...)
   dmy <- dummyVars(" ~ .", data = fieldsForEncoding)
   trsf<-data.frame(predict(dmy, newdata=employee_dataset))
   encodedDataset <- cbind(employee_dataset,trsf)
@@ -67,18 +71,19 @@ oneHotEncoding<-function(inputField1,inputField2){
   return(newData)
 }
 
+oneHotDataset<-oneHotEncoding(employee_dataset['Gender'],employee_dataset['OverTime'])
+
+newdf <- oneHotDataset %>% mutate(across(c(Attrition, BusinessTravel, Department, EducationField, JobRole, MaritalStatus, Over18),
+                                         ~as.numeric(as.factor(.))))
 
 ###########################################################################################################################################################################
 # main() function
 main<-function(){
-  originalStatistics<-basicStatistics(employee_dataset)
   
   
-  #newdf <- employee_dataset %>% mutate(across(c(Attrition, BusinessTravel, Department, EducationField, JobRole, MaritalStatus, Over18),
-  #                                            ~as.numeric(as.factor(.))))
   
   
-  ohe_fields<-oneHotEncoding(inputField1=employee_dataset['Gender'], inputField2=employee_dataset['OverTime'])
+  
 }
 
 
@@ -113,11 +118,11 @@ main()
           # newdf <- employee_dataset %>% mutate(across(c(Attrition, BusinessTravel, Department, EducationField, JobRole, MaritalStatus, Over18),
           #                                             ~as.numeric(as.factor(.))))
           # 
-          # #One hot encoding done here. 
-          # ohe_feats_train = c('Gender', 'OverTime')
-          # dummies_train <- dummyVars(~  Gender + OverTime, data = newdf)
-          # df_all_ohe_train <- as.data.frame(predict(dummies_train, newdata = newdf))
-          # df_all_combined_train <- cbind(newdf[,-c(which(colnames(newdf) %in% ohe_feats_train))],df_all_ohe_train)
+          # #One hot encoding done here. DONE
+          # ohe_feats_train = c('Gender', 'OverTime') DONE
+          # dummies_train <- dummyVars(~  Gender + OverTime, data = newdf) DONE
+          # df_all_ohe_train <- as.data.frame(predict(dummies_train, newdata = newdf)) DONE
+          # df_all_combined_train <- cbind(newdf[,-c(which(colnames(newdf) %in% ohe_feats_train))],df_all_ohe_train) DONE
           # 
           # # Create Bins and complete dataset before normalisation
           # dataBeforeNormalisation <- df_all_combined_train %>% mutate(MonthlyIncome = case_when(MonthlyIncome <= 2500 ~ 1,
