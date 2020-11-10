@@ -151,6 +151,23 @@ main<-function(){
   # Make sure there are no NA's
   any(is.na(dataBeforeNormalisation))
   
+  # remove fields that have zero variance
+  toRemove <- nearZeroVar(dataBeforeNormalisation)
+  dataBeforeNormalisation <- dataBeforeNormalisation[, -toRemove]
+  
+  # Calculate correlation matrix
+  corMatrix <- cor(dataBeforeNormalisation)
+  
+  # find attributes that are highly corrected
+  highlyCorrelated <- findCorrelation(corMatrix, cutoff=0.9)
+  
+  #names of highly correlated fields
+  highlyCorCol <- colnames(dataBeforeNormalisation)[highlyCorrelated]
+  
+  # remove highly correlated fields
+  dataForNormalisation <- dataBeforeNormalisation[, -which(colnames(dataBeforeNormalisation) %in% highlyCorCol)]
+  dim(dataForNormalisation)
+  
   print("Leaving main")
   
 } #endof main()
