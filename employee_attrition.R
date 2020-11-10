@@ -131,7 +131,25 @@ main<-function(){
                                   originalDataset['Attrition'],originalDataset["MaritalStatus"])
   
   # Create factors for ordered categorical fields
-  newdf <- oneHotDataset
+  newdf <- oneHotDataset %>% mutate(across(c(BusinessTravel, Department, JobRole, EducationField),
+                                          ~as.numeric(as.factor(.))))
+  
+  # Create Bins and complete dataset before normalisation
+  dataBeforeNormalisation <- newdf %>% mutate(MonthlyIncome = case_when(MonthlyIncome <= 2500 ~ 1,
+                                                                        MonthlyIncome > 2500   & MonthlyIncome <= 5000 ~ 2,
+                                                                        MonthlyIncome > 5000   & MonthlyIncome <= 7500 ~ 3,
+                                                                        MonthlyIncome > 7500   & MonthlyIncome <= 10000 ~ 4,
+                                                                        MonthlyIncome > 10000   & MonthlyIncome <= 12500 ~ 5,
+                                                                        MonthlyIncome > 12500   & MonthlyIncome <= 15000 ~ 6,
+                                                                        MonthlyIncome > 15000   & MonthlyIncome <= 17500 ~ 7,
+                                                                        MonthlyIncome > 17500   & MonthlyIncome <= 20000 ~ 8)) # end function
+  
+  if(all(sapply(dataBeforeNormalisation, is.numeric ))){
+    print("All Fields Are Numeric")
+  }
+  
+  # Make sure there are no NA's
+  any(is.na(dataBeforeNormalisation))
   
   print("Leaving main")
   
