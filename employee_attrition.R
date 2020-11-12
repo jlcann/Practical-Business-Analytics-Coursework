@@ -15,7 +15,7 @@ TYPE_NUMERIC      <- "NUMERIC"            # field is initially a numeric
 TYPE_IGNORE       <- "IGNORE"             # field is not encoded
 DISCREET_BINS     <- 5                    # Number of Discreet Bins Required for 
 OUTLIER_CONFIDENCE <- 0.99                # Confidence of discreet 
-CUTOFF            <- 0.9                  # Correlation cutoff
+CUTOFF            <- 0.95                 # Correlation cutoff
 
 
 
@@ -178,7 +178,7 @@ main<-function(){
   any(is.na(dataBeforeNormalisation))
   
   # remove fields that have zero variance
-  toRemove <- nearZeroVar(dataBeforeNormalisation) 
+  toRemove <- nearZeroVar(dataBeforeNormalisation, freqCut = 99/1) 
   removedCols <- colnames(dataBeforeNormalisation)[toRemove]
   print(paste("Removing the following columns as all values are the same"))
   print(removedCols)
