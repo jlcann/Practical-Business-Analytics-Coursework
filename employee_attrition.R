@@ -77,7 +77,8 @@ oneHotEncoding<-function(...){
   encodedDataset <- cbind(originalDataset[,which(field_types==TYPE_SYMBOLIC)],trsf)
   
   # Remove original fields that have been hot encoded
-  newData <- subset(encodedDataset, select = -c(Gender, OverTime, Attrition, MaritalStatus)) # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (1)
+  newData <- subset(encodedDataset, select = -c(Gender, OverTime, Attrition, MaritalStatus, 
+                                                BusinessTravel, Department, JobRole, EducationField)) # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (1)
   
   # Return new dataset
   return(newData)
@@ -139,28 +140,30 @@ main<-function(){
   # Ordinals subset
   ordinals<-originalDataset[,which(field_Types_Discreet_Ordinal==TYPE_ORDINAL)]
   
-  # Test if any ordinals are outliers and replace with mean values
-  ordinalsDataset <- NPREPROCESSING_outlier(ordinals = ordinals, OUTLIER_CONFIDENCE)
-  
   # Create Bins and complete dataset before normalisation
-  ordinalBinsDataset <- ordinalsDataset %>% mutate(MonthlyIncome = case_when(MonthlyIncome <= 2500 ~ 1,
-                                                                             MonthlyIncome > 2500   & MonthlyIncome <= 5000 ~ 2,
-                                                                             MonthlyIncome > 5000   & MonthlyIncome <= 7500 ~ 3,
-                                                                             MonthlyIncome > 7500   & MonthlyIncome <= 10000 ~ 4,
-                                                                             MonthlyIncome > 10000   & MonthlyIncome <= 12500 ~ 5,
-                                                                             MonthlyIncome > 12500   & MonthlyIncome <= 15000 ~ 6,
-                                                                             MonthlyIncome > 15000   & MonthlyIncome <= 17500 ~ 7,
-                                                                             MonthlyIncome > 17500   & MonthlyIncome <= 20000 ~ 8)) # end function
+  ordinalBinsDataset <- ordinals %>% mutate(MonthlyIncome = case_when(MonthlyIncome <= 2500 ~ 1,
+                                                                      MonthlyIncome > 2500   & MonthlyIncome <= 5000 ~ 2,
+                                                                      MonthlyIncome > 5000   & MonthlyIncome <= 7500 ~ 3,
+                                                                      MonthlyIncome > 7500   & MonthlyIncome <= 10000 ~ 4,
+                                                                      MonthlyIncome > 10000   & MonthlyIncome <= 12500 ~ 5,
+                                                                      MonthlyIncome > 12500   & MonthlyIncome <= 15000 ~ 6,
+                                                                      MonthlyIncome > 15000   & MonthlyIncome <= 17500 ~ 7,
+                                                                      MonthlyIncome > 17500 ~ 8)) # end function
+  
+  # Test if any ordinals are outliers and replace with mean values
+  ordinalsDataset <- NPREPROCESSING_outlier(ordinals = ordinalBinsDataset, OUTLIER_CONFIDENCE)
   
   # Symbolic subset
   symbolicDataset<-originalDataset[,which(field_types==TYPE_SYMBOLIC)]
   
   # One hot encode the following fields: Gender, OverTime, Attrition, MaritalStatus
   oneHotDataset <- oneHotEncoding(symbolicDataset['Gender'],symbolicDataset['OverTime'],
-                                  symbolicDataset['Attrition'],symbolicDataset["MaritalStatus"])
+                                  symbolicDataset['Attrition'],symbolicDataset["MaritalStatus"],
+                                  symbolicDataset["BusinessTravel"],symbolicDataset["Department"],
+                                  symbolicDataset["JobRole"], symbolicDataset["EducationField"])
   
   # Create factors for ordered categorical fields
-  newSymbolicDataset <- oneHotDataset %>% mutate(across(c(BusinessTravel, Department, JobRole, EducationField, Over18), # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (2) 
+  newSymbolicDataset <- oneHotDataset %>% mutate(across(c(Over18),
                                                         ~as.numeric(as.factor(.))))
   
   # Combine symbolic and numeric datasets
@@ -175,7 +178,10 @@ main<-function(){
   
   # remove fields that have zero variance
   toRemove <- nearZeroVar(dataBeforeNormalisation) 
-  dataBeforeNormalisation <- dataBeforeNormalisation[, -toRemove] # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (3)
+  removedCols <- colnames(dataBeforeNormalisation)[toRemove]
+  print(paste("Removing the following columns as all values are the same"))
+  print(removedCols)
+  dataBeforeNormalisation <- dataBeforeNormalisation[, -toRemove]
   
   # Calculate correlation matrix
   corMatrix <- cor(dataBeforeNormalisation)
@@ -184,8 +190,9 @@ main<-function(){
   highlyCorrelated <- findCorrelation(corMatrix, CUTOFF)
   
   #names of highly correlated fields
-  highlyCorCol <- colnames(dataBeforeNormalisation)[highlyCorrelated]  # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (4)
-  print(paste("Fields removed from high correlated: " , highlyCorCol))  # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (5)
+  highlyCorCol <- colnames(dataBeforeNormalisation)[highlyCorrelated]
+  print("Removing the following columns due to high correlation")
+  print(highlyCorCol)
   
   # remove highly correlated fields
   dataForNormalisation <- dataBeforeNormalisation[, -which(colnames(dataBeforeNormalisation) %in% highlyCorCol)]
@@ -193,6 +200,9 @@ main<-function(){
   
   # normalise dataset using function above
   normalisedDataset <- as.data.frame(lapply(dataForNormalisation,normalise))
+  
+  # Remove employee number from normalised dataset
+  normalisedDataset<-subset(normalisedDataset, select = -EmployeeNumber)
   
   # Transforms all inputs to a linear model mapped against AttritionYes
   linearModelTransformAllInputs<-lm(AttritionYes~.,data=normalisedDataset)
