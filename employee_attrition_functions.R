@@ -3,42 +3,6 @@
 manualTypes <- data.frame()
 
 # ************************************************
-# readDataset() :
-#
-# Read a CSV file from working directory
-#
-# INPUT: string - csvFilename - CSV filename
-#
-# OUTPUT : data frame - contents of the headed CSV file
-# ************************************************
-readDataset<-function(csvFilename){
-  
-  dataset<-read.csv(csvFilename,encoding="UTF-8",stringsAsFactors = FALSE)
-  
-  # The field names "confuse" some of the library algorithms
-  # As they do not like spaces, punctuation, etc.
-  names(dataset)<-removePunctuation(names(dataset))
-  
-  print(paste("CSV dataset",csvFilename,"has been read. Records=",nrow(dataset)))
-  return(dataset)
-}
-
-
-# ************************************************
-# removePunctuation()
-#
-# INPUT: String - fieldName - name of field
-#
-# OUTPUT : String - name of field with punctuation removed
-# ************************************************
-removePunctuation<-function(fieldName){
-  return(gsub("[[:punct:][:blank:]]+", "", fieldName))
-}
-
-
-
-
-# ************************************************
 # basicStatistics()
 # Output simple dataset field analysis results as a table in "Viewer"
 #
