@@ -20,8 +20,6 @@ manualTypes <- data.frame()
 # ************************************************
 basicStatistics<-function(dataset,...){
   
-  params <- list(...)
-  
   tidyTable<-data.frame(Field=names(dataset),
                         Catagorical=FALSE,
                         Symbols=0,
@@ -31,10 +29,6 @@ basicStatistics<-function(dataset,...){
                         Max=0.0,
                         Skew=0.0,
                         stringsAsFactors = FALSE)
-  
-  if (length(params)>0){
-    names(tidyTable)[1]<-params[1]
-  }
   
   for (i in 1:ncol(dataset)){
     isFieldAfactor<-!is.numeric(dataset[,i])

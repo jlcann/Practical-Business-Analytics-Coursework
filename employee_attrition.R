@@ -14,6 +14,7 @@ TYPE_NUMERIC      <- "NUMERIC"            # field is initially a numeric
 TYPE_IGNORE       <- "IGNORE"             # field is not encoded
 DISCREET_BINS     <- 5                    # Number of Discreet Bins Required for 
 OUTLIER_CONFIDENCE <- 0.99                # Confidence of discreet 
+CUTOFF            <- 0.9                  # Correlation cutoff
 
 
 
@@ -76,11 +77,12 @@ oneHotEncoding<-function(...){
   encodedDataset <- cbind(originalDataset[,which(field_types==TYPE_SYMBOLIC)],trsf)
   
   # Remove original fields that have been hot encoded
-  newData <- subset(encodedDataset, select = -c(Gender, OverTime, Attrition, MaritalStatus)) # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE 
+  newData <- subset(encodedDataset, select = -c(Gender, OverTime, Attrition, MaritalStatus)) # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (1)
   
   # Return new dataset
   return(newData)
 }
+
 
 # ************************************************
 # normalise() :
@@ -131,7 +133,7 @@ main<-function(){
   results<-data.frame(field=names(originalDataset),initial=field_types,types1=field_Types_Discreet_Ordinal)
   print(formattable::formattable(results))
   
-  # Ordinals subset
+  # Discreet subset
   discreetDataset<-originalDataset[,which(field_Types_Discreet_Ordinal==TYPE_DISCREET)]
   
   # Ordinals subset
@@ -158,7 +160,7 @@ main<-function(){
                                   symbolicDataset['Attrition'],symbolicDataset["MaritalStatus"])
   
   # Create factors for ordered categorical fields
-  newSymbolicDataset <- oneHotDataset %>% mutate(across(c(BusinessTravel, Department, JobRole, EducationField, Over18), # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE
+  newSymbolicDataset <- oneHotDataset %>% mutate(across(c(BusinessTravel, Department, JobRole, EducationField, Over18), # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (2) 
                                                         ~as.numeric(as.factor(.))))
   
   # Combine symbolic and numeric datasets
@@ -173,16 +175,17 @@ main<-function(){
   
   # remove fields that have zero variance
   toRemove <- nearZeroVar(dataBeforeNormalisation) 
-  dataBeforeNormalisation <- dataBeforeNormalisation[, -toRemove] # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE
+  dataBeforeNormalisation <- dataBeforeNormalisation[, -toRemove] # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (3)
   
   # Calculate correlation matrix
   corMatrix <- cor(dataBeforeNormalisation)
   
   # find attributes that are highly corrected
-  highlyCorrelated <- findCorrelation(corMatrix, cutoff=0.9)
+  highlyCorrelated <- findCorrelation(corMatrix, CUTOFF)
   
   #names of highly correlated fields
-  highlyCorCol <- colnames(dataBeforeNormalisation)[highlyCorrelated]
+  highlyCorCol <- colnames(dataBeforeNormalisation)[highlyCorrelated]  # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (4)
+  print(paste("Fields removed from high correlated: " , highlyCorCol))  # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (5)
   
   # remove highly correlated fields
   dataForNormalisation <- dataBeforeNormalisation[, -which(colnames(dataBeforeNormalisation) %in% highlyCorCol)]
