@@ -14,7 +14,8 @@ TYPE_NUMERIC      <- "NUMERIC"            # field is initially a numeric
 TYPE_IGNORE       <- "IGNORE"             # field is not encoded
 DISCREET_BINS     <- 5                    # Number of Discreet Bins Required for 
 OUTLIER_CONFIDENCE <- 0.99                # Confidence of discreet 
-CUTOFF            <- 0.95                 # Correlation cutoff
+CUTOFF            <- 0.90                 # Correlation cutoff
+FREQCUT           <- 99/1                 # To remove zero variance fields
 
 
 
@@ -53,33 +54,31 @@ set.seed(123)
 # originalDataSet <- readDataset(DATASET_FILENAME)
 originalDataset <- read.csv("employee-attrition.csv")
 
-# ************************************************
-# GLOBAL FUNCTIONS
-
-# ************************************************
+# ****************
 # oneHotEncoding() :
 #   Pre-processing method to convert appropriate 
 #   categorical fields into binary representation
 #
-# INPUT       :   Categoric fields to encode
+# INPUT       :   dataframe - dataset           - dataset to one hot encode
+#                 vector    - fieldsForEncoding -  
 #
 # OUTPUT      :   Encoded fields
-# ************************************************
-oneHotEncoding<-function(...){
+# ****************
+oneHotEncoding<-function(dataset,fieldsForEncoding){
   # Combine input fields for encoding
-  fieldsForEncoding = c(...)
+  stringToFormulate <- substring(paste(" + ", fieldsForEncoding, sep = "", collapse = ""), 4)
+  
+  OHEFormula <- as.formula(paste("~",stringToFormulate))
   
   # One hot encode fields listed in function
-  dmy <- dummyVars(" ~ .", data = fieldsForEncoding)
+  dmy <- dummyVars(OHEFormula, data = dataset)
   trsf<- data.frame(predict(dmy, newdata = originalDataset[,which(field_types==TYPE_SYMBOLIC)]))
   
   # Combine the encoded fields back to the originalDataset
   encodedDataset <- cbind(originalDataset[,which(field_types==TYPE_SYMBOLIC)],trsf)
   
   # Remove original fields that have been hot encoded
-  newData <- subset(encodedDataset, select = -c(Gender, OverTime, Attrition, MaritalStatus, 
-                                                BusinessTravel, Department, JobRole, EducationField)) # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (1)
-  
+  newData<- encodedDataset %>% select(-c(fieldsForEncoding))
   # Return new dataset
   return(newData)
 }
@@ -125,6 +124,9 @@ main<-function(){
   #Print statistics of originalDataSet into the viewer.
   basicStatistics(originalDataset)
   
+  # Check for NA fields in original dataset
+  print(sapply(originalDataset,function(x) sum(is.na(x))))
+  
   # Determine if fields are SYMBOLIC or NUMERIC (global)
   field_types<<-FieldTypes(originalDataset)
   
@@ -135,7 +137,7 @@ main<-function(){
   results<-data.frame(field=names(originalDataset),initial=field_types,types1=field_Types_Discreet_Ordinal)
   print(formattable::formattable(results))
   
-  # Discreet subset
+  # Discreet subset 
   discreetDataset<-originalDataset[,which(field_Types_Discreet_Ordinal==TYPE_DISCREET)]
   
   # Ordinals subset
@@ -158,10 +160,8 @@ main<-function(){
   symbolicDataset<-originalDataset[,which(field_types==TYPE_SYMBOLIC)]
   
   # One hot encode the following fields: Gender, OverTime, Attrition, MaritalStatus
-  oneHotDataset <- oneHotEncoding(symbolicDataset['Gender'],symbolicDataset['OverTime'],
-                                  symbolicDataset['Attrition'],symbolicDataset["MaritalStatus"],
-                                  symbolicDataset["BusinessTravel"],symbolicDataset["Department"],
-                                  symbolicDataset["JobRole"], symbolicDataset["EducationField"])
+  fieldsForEncoding <- c("Gender", "OverTime", "Attrition", "MaritalStatus", "BusinessTravel", "Department", "JobRole", "EducationField")
+  oneHotDataset <- oneHotEncoding(dataset = symbolicDataset, fieldsForEncoding =fieldsForEncoding)
   
   # Create factors for ordered categorical fields
   newSymbolicDataset <- oneHotDataset %>% mutate(across(c(Over18),
@@ -178,7 +178,7 @@ main<-function(){
   any(is.na(dataBeforeNormalisation))
   
   # remove fields that have zero variance
-  toRemove <- nearZeroVar(dataBeforeNormalisation, freqCut = 99/1) 
+  toRemove <- nearZeroVar(dataBeforeNormalisation, freqCut = FREQCUT) 
   removedCols <- colnames(dataBeforeNormalisation)[toRemove]
   print(paste("Removing the following columns as all values are the same"))
   print(removedCols)
@@ -205,18 +205,21 @@ main<-function(){
   # Remove employee number from normalised dataset
   normalisedDataset<-subset(normalisedDataset, select = -EmployeeNumber)
   
-  # Transforms all inputs to a linear model mapped against AttritionYes
-  linearModelTransformAllInputs<-lm(AttritionYes~.,data=normalisedDataset)
+  # Transforms all inputs to a logistic model mapped against AttritionYes
+  logisticModelTransformAllInputs<-glm(AttritionYes~.,family=binomial(link='logit'),data=normalisedDataset)
   
   # OPTIONAL Show importance
   # uses caret library
-  print(summary(linearModelTransformAllInputs))
+  print(summary(logisticModelTransformAllInputs))
+  
+  # Analyze the table of deviance
+  print(anova(logisticModelTransformAllInputs))
   
   # Use caret library to determine scaled "importance"
-  importance<-as.data.frame(caret::varImp(linearModelTransformAllInputs, scale = TRUE))
+  importance<-as.data.frame(caret::varImp(logisticModelTransformAllInputs, scale = TRUE))
   
   # Plot the % importance ordered from lowest to highest
-  barplot(t(importance[order(importance$Overall),,drop=FALSE]))
+  barplot(t(importance[order(importance$Overall),,drop=FALSE]), las = 2, border = 0, cex.names = 0.8)
   
 } #endof main()
 
