@@ -6,7 +6,7 @@ rm(list=ls())
 # I use UPPERCASE to identify these in my code
 
 DATASET_FILENAME  <- "employee-attrition.csv"          # Name of input dataset file
-OUTPUT_FIELD      <- "Attrition"             # Field name of the output class to predict
+OUTPUT_FIELD      <- "AttritionYes"             # Field name of the output class to predict
 
 TYPE_DISCREET     <- "DISCREET"           # field is discreet (numeric)
 TYPE_ORDINAL      <- "ORDINAL"            # field is continuous numeric
@@ -16,6 +16,8 @@ TYPE_IGNORE       <- "IGNORE"             # field is not encoded
 DISCREET_BINS     <- 5                    # Number of Discreet Bins Required for 
 OUTLIER_CONFIDENCE <- 0.99                # Confidence of discreet 
 CUTOFF            <- 0.95                 # Correlation cutoff
+HOLDOUT           <- 70                   # Holdout percentage for training set
+K_FOLDS           <- 10                    # Number of holds for stratified cross validation
 
 
 
@@ -218,8 +220,25 @@ main<-function(){
   # Plot the % importance ordered from lowest to highest
   barplot(t(importance[order(importance$Overall),,drop=FALSE]))
   
+  #Randomised the normalised dataset row wise, ready for splitting into test and training split.
+  randomisedDataset <- normalisedDataset[sample(nrow(normalisedDataset)),]
+  
+  #Create a training Sample Size
+  trainingSampleSize <- round(nrow(randomisedDataset))*(HOLDOUT/100)
+  
+  #Create the training Set
+  trainingSet <- normalisedDataset[1:trainingSampleSize,]
+  
+  #Create the test Set
+  testSet <- normalisedDataset[-(1:trainingSampleSize),]
+
+  #Create a stratified data frame ready for stratified k-fold validation
+  stratifiedData <- stratifyDataset(normalisedDataset,OUTPUT_FIELD,K_FOLDS)
+  
+  return(stratifiedData)
+
   print("Leaving main")
   
 } #endof main()
 
-main()
+lol <- main()

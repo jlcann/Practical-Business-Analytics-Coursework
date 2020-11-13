@@ -245,3 +245,40 @@ NplotOutliers<-function(sorted,outliers,fieldName){
   if (length(outliers)>0)
     points(outliers,sorted[outliers],col="red",pch=19)
 }
+
+
+stratifyDataset <- function(dataset, output, folds){
+
+  #Create a variable containing all the unique classes in the column of our output variable 
+  uniqueClasses <- unique(dataset[,output])
+  
+  #Create a variable containing all the row positions where class = uniqueClasses[1], in our case. 1 = Yes, (leaving job)
+  rowPositions <- which(dataset[,output]==uniqueClasses[1])
+  
+  #Create two data frames, one containing all rows in which employees are leaving, and the other in which the employees are staying
+  leavingYes<- dataset[rowPositions,]
+  leavingNo<- dataset[-rowPositions,]
+  
+  #Print the totals for each class
+  print(paste("Number of people leaving: ", nrow(leavingYes)))
+  print(paste("Number of people staying: ", nrow(leavingNo)))
+  
+  #Create a list for each of the data frames, which contains the fold sequence (1,2,3,4...) up to the amount of rows per data frame.
+  #If there are 200 rows, and 10 folds, the sequence of 1 to 10(Folds), will repeat 200/10 times, so 20 times.
+  foldSequenceYes <- rep(seq(1:folds),ceiling(nrow(leavingYes)/folds))
+  foldSequenceNo  <- rep(seq(1:folds),ceiling(nrow(leavingNo)/folds))
+  
+  #Creates a new column and appends it to each of the data frames. The columns content is of each of the sequence lists above into it. 
+  leavingYes$foldIds <- foldSequenceYes[1:nrow(leavingYes)]
+  leavingNo$foldIds  <- foldSequenceNo[1:nrow(leavingNo)]
+  
+  #Bind the two data frames back together, now each of them have their assigned folds.
+  stratifiedData<-rbind(leavingYes, leavingNo)
+  
+  #Randomise the new data frame before returning it.
+  stratifiedData <- stratifiedData[sample(nrow(stratifiedData)),]
+  
+  #Returns the combined and randomised data frame.
+  return(stratifiedData)
+
+} 
