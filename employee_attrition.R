@@ -53,7 +53,8 @@ MYLIBRARIES<-c("outliers",
                "C50",
                "randomForest",
                "keras",
-               "tensorflow")
+               "tensorflow",
+               "stringr")
 
 # clears the console area
 cat("\014")
@@ -198,7 +199,6 @@ main<-function(){
   
   normalisedDataset <<- preprocessing(originalDataset)
   
-  #Randomised the normalised dataset row wise, ready for splitting into test and training split.
   randomisedDataset <- normalisedDataset[sample(nrow(normalisedDataset)),]
   
   #Create a training Sample Size
@@ -212,6 +212,9 @@ main<-function(){
 
   #Create a stratified data frame ready for stratified k-fold validation
   stratifiedData <- stratifyDataset(normalisedDataset,OUTPUT_FIELD,K_FOLDS)
+  
+  #DecisionTrees
+  DTmeasures <- simpleDT(trainingSet,testSet)
   
   #Test object to see if the kFoldTrainingSplit function is working as intended
   test <- kFoldTrainingSplit(stratifiedData,3)
