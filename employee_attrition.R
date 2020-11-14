@@ -19,13 +19,13 @@ CUTOFF            <- 0.90                # Correlation cutoff
 HOLDOUT           <- 70                   # Holdout percentage for training set
 K_FOLDS           <- 10                    # Number of holds for stratified cross validation
 
-BASICNN_HIDDEN <- 5 # 10 hidden layer neurons
-BASICNN_EPOCHS <- 100 # Maximum number of training epocs
-# See https://cran.r-project.org/web/packages/h2o/h2o.pdf
-DEEP_HIDDEN <- c(5,5) # Number of neurons in each layer
+NN_HIDDEN_LAYER_NEURONS <- 5 # 10 hidden layer neurons
+NN_EPOCHS <- 100 # Maximum number of training epochs
+
+DEEP_HIDDEN_LAYER_NEURONS <- c(5,5) # Number of neurons in each layer
 DEEP_STOPPING <- 2 # Number of times no improvement before stop
 DEEP_TOLERANCE <- 0.01 # Error threshold
-DEEP_ACTIVATION <- "TanhWithDropout" # Non-linear activation function
+DEEP_ACTIVATION <- "ReLU" # Non-linear activation function
 DEEP_REPRODUCABLE <- TRUE # Set to TRUE to test training is same for each run
 
 
@@ -65,49 +65,6 @@ set.seed(123)
 # originalDataSet <- readDataset(DATASET_FILENAME)
 originalDataset <- read.csv(DATASET_FILENAME, encoding="UTF-8",stringsAsFactors = FALSE)
 
-# ************************************************
-# GLOBAL FUNCTIONS
-
-# ************************************************
-# oneHotEncoding() :
-#   Pre-processing method to convert appropriate 
-#   categorical fields into binary representation
-#
-# INPUT       :   Categoric fields to encode
-#
-# OUTPUT      :   Encoded fields
-# ************************************************
-oneHotEncoding<-function(...){
-  # Combine input fields for encoding
-  fieldsForEncoding = c(...)
-  
-  # One hot encode fields listed in function
-  dmy <- dummyVars(" ~ .", data = fieldsForEncoding)
-  trsf<- data.frame(predict(dmy, newdata = originalDataset[,which(field_types==TYPE_SYMBOLIC)]))
-  
-  # Combine the encoded fields back to the originalDataset
-  encodedDataset <- cbind(originalDataset[,which(field_types==TYPE_SYMBOLIC)],trsf)
-  
-  # Remove original fields that have been hot encoded
-  newData <- subset(encodedDataset, select = -c(Gender, OverTime, Attrition, MaritalStatus, 
-                                                BusinessTravel, Department, JobRole, EducationField)) # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (1)
-  
-  # Return new dataset
-  return(newData)
-}
-
-
-# ************************************************
-# normalise() :
-#   Normalise fields between 1 and 0
-#
-# INPUT       :   Fields to normalise
-#
-# OUTPUT      :   Normalised fields between 1 and 0
-# ************************************************
-normalise <- function(values) {
-  return ((values - min(values)) / (max(values) - min(values)))
-}
 
 # ************************************************
 # main() :

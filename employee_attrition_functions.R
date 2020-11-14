@@ -104,21 +104,45 @@ FieldTypes<-function(dataset){
   return(field_types)
 }
 
-
 # ************************************************
-# rescaleField() :
+# oneHotEncoding() :
+#   Pre-processing method to convert appropriate 
+#   categorical fields into binary representation
 #
-# Rescale an numeric field to be between 0-1.
+# INPUT       :   Categoric fields to encode
 #
-# INPUT: Vector to rescale
-#
-# OUTPUT : Vector scaled between 0,1
+# OUTPUT      :   Encoded fields
 # ************************************************
-
-rescaleField<-function(input){
-  return((input-min(input))/(max(input)-min(input)))
+oneHotEncoding<-function(...){
+  # Combine input fields for encoding
+  fieldsForEncoding = c(...)
+  
+  # One hot encode fields listed in function
+  dmy <- dummyVars(" ~ .", data = fieldsForEncoding)
+  trsf<- data.frame(predict(dmy, newdata = originalDataset[,which(field_types==TYPE_SYMBOLIC)]))
+  
+  # Combine the encoded fields back to the originalDataset
+  encodedDataset <- cbind(originalDataset[,which(field_types==TYPE_SYMBOLIC)],trsf)
+  
+  # Remove original fields that have been hot encoded
+  newData <- subset(encodedDataset, select = -c(Gender, OverTime, Attrition, MaritalStatus, 
+                                                BusinessTravel, Department, JobRole, EducationField)) # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (1)
+  
+  # Return new dataset
+  return(newData)
 }
 
+# ************************************************
+# normalise() :
+#   Normalise fields between 1 and 0
+#
+# INPUT       :   Fields to normalise
+#
+# OUTPUT      :   Normalised fields between 1 and 0
+# ************************************************
+normalise <- function(values) {
+  return ((values - min(values)) / (max(values) - min(values)))
+}
 
 # ************************************************
 # NPREPROCESSING_discreetNumeric() :
@@ -143,7 +167,7 @@ NPREPROCESSING_discreetNumeric<-function(dataset,field_types,cutoff){
     if (field_types[field]==TYPE_NUMERIC) {
       
       #Scale the whole field (column) to between 0 and 1
-      scaled_column<-rescaleField(dataset[,field])
+      scaled_column<-normalise(dataset[,field])
       
       #Generate the "cutoff" points for each of 10 bins
       #so we will get 0-0.1, 0.1-0.2...0.9-1.0
