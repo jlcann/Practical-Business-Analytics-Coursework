@@ -247,6 +247,33 @@ NplotOutliers<-function(sorted,outliers,fieldName){
 }
 
 
+
+# ************************************************
+# stratifyDataset() :
+#
+# Separate the classes in the dataset (AttritionYes = 1, and = 0)
+#
+# For each of the classes, calculate the amount of records that 
+# will appear in each of the folds.
+# Give each of these groups of records their own fold id.
+#
+# Combine the two classes back together into a single data.frame and randomize.
+#
+# Data is now ready to be used for the kFoldTrainingSplit() and kFoldModel()
+# functions.
+# 
+# Return the combined data.frame.
+#
+#
+# INPUT   : dataset - data.frame - a normalised dataset ready for stratification.
+#         : output - string - String containing the classes to predict (AttritionYes).
+#         : folds - Integer - Number of folds to be used in the Stratified Cross Validation.
+#
+#
+# OUTPUT  : stratifiedData - data.frame - the stratified dataset ready for Cross Validation.
+# ************************************************
+
+
 stratifyDataset <- function(dataset, output, folds){
 
   #Create a variable containing all the unique classes in the column of our output variable 
@@ -282,3 +309,61 @@ stratifyDataset <- function(dataset, output, folds){
   return(stratifiedData)
 
 } 
+
+# ************************************************
+# kFoldTrainingSplit() :
+#
+# Separates a stratified dataset into training and testing data.frames
+# based on the desired fold
+#
+# INPUT   : dataset - data.frame - Stratified dataset.
+#         : fold - integer - FoldIds number for the test set
+#
+# OUTPUT  : separatedData - List - list containing two data.frames, test and train
+#
+#
+#*************************************************
+
+kFoldTrainingSplit <- function(dataset, fold){
+  
+  #Create a data.frame containing all of the rows with FoldIds == fold.
+  testSet <- subset(dataset, subset = foldIds==fold)
+  
+  #Create a data.frame contraining the rest of the rows, with FoldIds != fold.
+  trainingSet <- subset(dataset, subset = foldIds!=fold)
+  
+  #Merge the two data.frames into a single list, ready to be returned.
+  separatedData <- list(test=testSet, train=trainingSet)
+  
+  #Return the separated data in list form ready for modelling. 
+  return(separatedData)
+  
+}
+
+
+# ************************************************
+# kFoldModel() :
+#
+# 
+#
+# INPUT   : dataset - dataset contained in data.frame
+#           FUN - Function Name (Model)
+#
+# OUTPUT : None
+# ************************************************
+
+
+kFoldModel <- function(dataset,FUN,...){
+  
+  results <- data.frame()
+  
+  for (i in 1:K_FOLDS) {
+    
+    separatedData<-kFoldTrainingSplit(dataset,i)
+    
+    modelMeasures<-FUN(train=separatedData$train,
+                       test=separatedData$test)
+    
+  }
+  
+}

@@ -19,7 +19,14 @@ CUTOFF            <- 0.95                 # Correlation cutoff
 HOLDOUT           <- 70                   # Holdout percentage for training set
 K_FOLDS           <- 10                    # Number of holds for stratified cross validation
 
-
+BASICNN_HIDDEN <- 5 # 10 hidden layer neurons
+BASICNN_EPOCHS <- 100 # Maximum number of training epocs
+# See https://cran.r-project.org/web/packages/h2o/h2o.pdf
+DEEP_HIDDEN <- c(5,5) # Number of neurons in each layer
+DEEP_STOPPING <- 2 # Number of times no improvement before stop
+DEEP_TOLERANCE <- 0.01 # Error threshold
+DEEP_ACTIVATION <- "TanhWithDropout" # Non-linear activation function
+DEEP_REPRODUCABLE <- TRUE # Set to TRUE to test training is same for each run
 
 
 # Define and then load the libraries used in this project
@@ -39,7 +46,9 @@ MYLIBRARIES<-c("outliers",
                "stats",
                "PerformanceAnalytics",
                "caret",
-               "dplyr")
+               "dplyr",
+               "keras",
+               "tensorflow")
 
 # clears the console area
 cat("\014")
@@ -235,7 +244,10 @@ main<-function(){
   #Create a stratified data frame ready for stratified k-fold validation
   stratifiedData <- stratifyDataset(normalisedDataset,OUTPUT_FIELD,K_FOLDS)
   
-  return(stratifiedData)
+  #Test object to see if the kFoldTrainingSplit function is working as intended
+  test <- kFoldTrainingSplit(stratifiedData,3)
+  
+  return(test)
 
   print("Leaving main")
   
