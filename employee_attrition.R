@@ -31,6 +31,8 @@ FREQCUT           <- 99/1                 # To remove zero variance fields
 # PerformanceAnalytics   2.0.4
 # Carat                  6.0-86
 # dplyr                  2.0.0
+# C50                    0.1.3.1
+# randomForest           4.6-14
 MYLIBRARIES<-c("outliers",
                "corrplot",
                "MASS",
@@ -38,7 +40,9 @@ MYLIBRARIES<-c("outliers",
                "stats",
                "PerformanceAnalytics",
                "caret",
-               "dplyr")
+               "dplyr",
+               "C50",
+               "randomForest")
 
 # clears the console area
 cat("\014")
