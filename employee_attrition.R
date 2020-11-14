@@ -25,11 +25,14 @@ FREQCUT           <- 99/1                 # To remove zero variance fields
 # pacman	               0.5.1
 # outliers	             0.14
 # corrplot	             0.84
-# MASS	                 7.3.53
+# MASS	                 7.3-51.6
 # formattable 	         0.2.0.1
 # stats                  4.0.3
 # PerformanceAnalytics   2.0.4
-# Carat         
+# Carat                  6.0-86
+# dplyr                  2.0.0
+# C50                    0.1.3.1
+# randomForest           4.6-14
 MYLIBRARIES<-c("outliers",
                "corrplot",
                "MASS",
@@ -37,7 +40,9 @@ MYLIBRARIES<-c("outliers",
                "stats",
                "PerformanceAnalytics",
                "caret",
-               "dplyr")
+               "dplyr",
+               "C50",
+               "randomForest")
 
 # clears the console area
 cat("\014")
@@ -50,9 +55,6 @@ pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
 source("employee_attrition_functions.R")
 
 set.seed(123)
-
-# originalDataSet <- readDataset(DATASET_FILENAME)
-originalDataset <- read.csv("employee-attrition.csv")
 
 # ****************
 # oneHotEncoding() :
@@ -72,10 +74,10 @@ oneHotEncoding<-function(dataset,fieldsForEncoding){
   
   # One hot encode fields listed in function
   dmy <- dummyVars(OHEFormula, data = dataset)
-  trsf<- data.frame(predict(dmy, newdata = originalDataset[,which(field_types==TYPE_SYMBOLIC)]))
+  trsf<- data.frame(predict(dmy, newdata = dataset))
   
   # Combine the encoded fields back to the originalDataset
-  encodedDataset <- cbind(originalDataset[,which(field_types==TYPE_SYMBOLIC)],trsf)
+  encodedDataset <- cbind(dataset,trsf)
   
   # Remove original fields that have been hot encoded
   newData<- encodedDataset %>% select(-c(fieldsForEncoding))
@@ -223,7 +225,9 @@ preprocessing <- function(originalDataset){
 main<-function(){
   print("Inside main function")
   
-  normalisedDataset <<- preprocessing(originalDataset = originalDataset)
+  originalDataset <- read.csv(DATASET_FILENAME)
+  
+  normalisedDataset <<- preprocessing(originalDataset)
   
   print("Leaving main")
   
