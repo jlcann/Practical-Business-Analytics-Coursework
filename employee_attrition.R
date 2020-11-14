@@ -25,11 +25,12 @@ FREQCUT           <- 99/1                 # To remove zero variance fields
 # pacman	               0.5.1
 # outliers	             0.14
 # corrplot	             0.84
-# MASS	                 7.3.53
+# MASS	                 7.3-51.6
 # formattable 	         0.2.0.1
 # stats                  4.0.3
 # PerformanceAnalytics   2.0.4
-# Carat         
+# Carat                  6.0-86
+# dplyr                  2.0.0
 MYLIBRARIES<-c("outliers",
                "corrplot",
                "MASS",
