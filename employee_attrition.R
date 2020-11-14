@@ -67,48 +67,6 @@ source("employee_attrition_functions.R")
 
 set.seed(123)
 
-# ****************
-# oneHotEncoding() :
-#   Pre-processing method to convert appropriate 
-#   categorical fields into binary representation
-#
-# INPUT       :   dataframe - dataset           - dataset to one hot encode
-#                 vector    - fieldsForEncoding -  
-#
-# OUTPUT      :   Encoded fields
-# ****************
-oneHotEncoding<-function(dataset,fieldsForEncoding){
-  # Combine input fields for encoding
-  stringToFormulate <- substring(paste(" + ", fieldsForEncoding, sep = "", collapse = ""), 4)
-  
-  OHEFormula <- as.formula(paste("~",stringToFormulate))
-  
-  # One hot encode fields listed in function
-  dmy <- dummyVars(OHEFormula, data = dataset)
-  trsf<- data.frame(predict(dmy, newdata = dataset))
-  
-  # Combine the encoded fields back to the originalDataset
-  encodedDataset <- cbind(dataset,trsf)
-  
-  # Remove original fields that have been hot encoded
-  newData<- encodedDataset %>% select(-c(fieldsForEncoding))
-  # Return new dataset
-  return(newData)
-}
-
-
-# ************************************************
-# normalise() :
-#   Normalise fields between 1 and 0
-#
-# INPUT       :   Fields to normalise
-#
-# OUTPUT      :   Normalised fields between 1 and 0
-# ************************************************
-normalise <- function(values) {
-  return ((values - min(values)) / (max(values) - min(values)))
-}
-
 
 # ************************************************
 # preprocessing() :
@@ -258,7 +216,7 @@ main<-function(){
   #Test object to see if the kFoldTrainingSplit function is working as intended
   test <- kFoldTrainingSplit(stratifiedData,3)
   
-  return(normalisedDataset)
+  return(test)
 
 }
 

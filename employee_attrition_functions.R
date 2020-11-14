@@ -104,33 +104,35 @@ FieldTypes<-function(dataset){
   return(field_types)
 }
 
-# ************************************************
+# ****************
 # oneHotEncoding() :
 #   Pre-processing method to convert appropriate 
 #   categorical fields into binary representation
 #
-# INPUT       :   Categoric fields to encode
+# INPUT       :   dataframe - dataset           - dataset to one hot encode
+#                 vector    - fieldsForEncoding -  
 #
 # OUTPUT      :   Encoded fields
-# ************************************************
-oneHotEncoding<-function(...){
+# ****************
+oneHotEncoding<-function(dataset,fieldsForEncoding){
   # Combine input fields for encoding
-  fieldsForEncoding = c(...)
+  stringToFormulate <- substring(paste(" + ", fieldsForEncoding, sep = "", collapse = ""), 4)
+  
+  OHEFormula <- as.formula(paste("~",stringToFormulate))
   
   # One hot encode fields listed in function
-  dmy <- dummyVars(" ~ .", data = fieldsForEncoding)
-  trsf<- data.frame(predict(dmy, newdata = originalDataset[,which(field_types==TYPE_SYMBOLIC)]))
+  dmy <- dummyVars(OHEFormula, data = dataset)
+  trsf<- data.frame(predict(dmy, newdata = dataset))
   
   # Combine the encoded fields back to the originalDataset
-  encodedDataset <- cbind(originalDataset[,which(field_types==TYPE_SYMBOLIC)],trsf)
+  encodedDataset <- cbind(dataset,trsf)
   
   # Remove original fields that have been hot encoded
-  newData <- subset(encodedDataset, select = -c(Gender, OverTime, Attrition, MaritalStatus, 
-                                                BusinessTravel, Department, JobRole, EducationField)) # HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE (1)
-  
+  newData<- encodedDataset %>% select(-c(fieldsForEncoding))
   # Return new dataset
   return(newData)
 }
+
 
 # ************************************************
 # normalise() :
@@ -143,6 +145,8 @@ oneHotEncoding<-function(...){
 normalise <- function(values) {
   return ((values - min(values)) / (max(values) - min(values)))
 }
+
+
 
 # ************************************************
 # NPREPROCESSING_discreetNumeric() :
