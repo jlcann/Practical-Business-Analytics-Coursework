@@ -352,7 +352,7 @@ kFoldTrainingSplit <- function(dataset, fold){
 # OUTPUT : None
 # ************************************************
 
-
+#NEEDS TO BE FINISHED - NEED TO KNOW MORE ABOUT PLOT AND MEASURE RESULTS FIRST.
 kFoldModel <- function(dataset,FUN,...){
   
   results <- data.frame()

@@ -15,7 +15,7 @@ TYPE_NUMERIC      <- "NUMERIC"            # field is initially a numeric
 TYPE_IGNORE       <- "IGNORE"             # field is not encoded
 DISCREET_BINS     <- 5                    # Number of Discreet Bins Required for 
 OUTLIER_CONFIDENCE <- 0.99                # Confidence of discreet 
-CUTOFF            <- 0.95                 # Correlation cutoff
+CUTOFF            <- 0.90                # Correlation cutoff
 HOLDOUT           <- 70                   # Holdout percentage for training set
 K_FOLDS           <- 10                    # Number of holds for stratified cross validation
 
@@ -63,7 +63,7 @@ source("employee_attrition_functions.R")
 set.seed(123)
 
 # originalDataSet <- readDataset(DATASET_FILENAME)
-originalDataset <- read.csv("employee-attrition.csv")
+originalDataset <- read.csv(DATASET_FILENAME, encoding="UTF-8",stringsAsFactors = FALSE)
 
 # ************************************************
 # GLOBAL FUNCTIONS
@@ -247,7 +247,7 @@ main<-function(){
   #Test object to see if the kFoldTrainingSplit function is working as intended
   test <- kFoldTrainingSplit(stratifiedData,3)
   
-  return(test)
+  return(normalisedDataset)
 
   print("Leaving main")
   
