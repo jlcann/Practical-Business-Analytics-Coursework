@@ -56,8 +56,7 @@ source("employee_attrition_functions.R")
 
 set.seed(123)
 
-# originalDataSet <- readDataset(DATASET_FILENAME)
-originalDataset <- read.csv("employee-attrition.csv")
+originalDataset <- read.csv(DATASET_FILENAME)
 
 # ****************
 # oneHotEncoding() :
