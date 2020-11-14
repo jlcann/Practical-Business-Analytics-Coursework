@@ -5,7 +5,7 @@ rm(list=ls())
 # I use UPPERCASE to identify these in my code
 
 DATASET_FILENAME  <- "employee-attrition.csv"          # Name of input dataset file
-OUTPUT_FIELD      <- "Attrition"             # Field name of the output class to predict
+OUTPUT_FIELD      <- "AttritionYes"             # Field name of the output class to predict
 
 TYPE_DISCREET     <- "DISCREET"           # field is discreet (numeric)
 TYPE_ORDINAL      <- "ORDINAL"            # field is continuous numeric
@@ -15,9 +15,18 @@ TYPE_IGNORE       <- "IGNORE"             # field is not encoded
 DISCREET_BINS     <- 5                    # Number of Discreet Bins Required for 
 OUTLIER_CONFIDENCE <- 0.99                # Confidence of discreet 
 CUTOFF            <- 0.90                 # Correlation cutoff
+HOLDOUT           <- 70                   # Holdout percentage for training set
+K_FOLDS           <- 10                   # Number of holds for stratified cross validation
 FREQCUT           <- 99/1                 # To remove zero variance fields
 
+NN_HIDDEN_LAYER_NEURONS <- 5 # 10 hidden layer neurons
+NN_EPOCHS <- 100 # Maximum number of training epochs
 
+DEEP_HIDDEN_LAYER_NEURONS <- c(5,5) # Number of neurons in each layer
+DEEP_STOPPING <- 2 # Number of times no improvement before stop
+DEEP_TOLERANCE <- 0.01 # Error threshold
+DEEP_ACTIVATION <- "ReLU" # Non-linear activation function
+DEEP_REPRODUCABLE <- TRUE # Set to TRUE to test training is same for each run
 
 
 # Define and then load the libraries used in this project
@@ -42,7 +51,9 @@ MYLIBRARIES<-c("outliers",
                "caret",
                "dplyr",
                "C50",
-               "randomForest")
+               "randomForest",
+               "keras",
+               "tensorflow")
 
 # clears the console area
 cat("\014")
@@ -55,48 +66,6 @@ pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
 source("employee_attrition_functions.R")
 
 set.seed(123)
-
-# ****************
-# oneHotEncoding() :
-#   Pre-processing method to convert appropriate 
-#   categorical fields into binary representation
-#
-# INPUT       :   dataframe - dataset           - dataset to one hot encode
-#                 vector    - fieldsForEncoding -  
-#
-# OUTPUT      :   Encoded fields
-# ****************
-oneHotEncoding<-function(dataset,fieldsForEncoding){
-  # Combine input fields for encoding
-  stringToFormulate <- substring(paste(" + ", fieldsForEncoding, sep = "", collapse = ""), 4)
-  
-  OHEFormula <- as.formula(paste("~",stringToFormulate))
-  
-  # One hot encode fields listed in function
-  dmy <- dummyVars(OHEFormula, data = dataset)
-  trsf<- data.frame(predict(dmy, newdata = dataset))
-  
-  # Combine the encoded fields back to the originalDataset
-  encodedDataset <- cbind(dataset,trsf)
-  
-  # Remove original fields that have been hot encoded
-  newData<- encodedDataset %>% select(-c(fieldsForEncoding))
-  # Return new dataset
-  return(newData)
-}
-
-
-# ************************************************
-# normalise() :
-#   Normalise fields between 1 and 0
-#
-# INPUT       :   Fields to normalise
-#
-# OUTPUT      :   Normalised fields between 1 and 0
-# ************************************************
-normalise <- function(values) {
-  return ((values - min(values)) / (max(values) - min(values)))
-}
 
 
 # ************************************************
@@ -225,12 +194,30 @@ preprocessing <- function(originalDataset){
 main<-function(){
   print("Inside main function")
   
-  originalDataset <- read.csv(DATASET_FILENAME)
+  originalDataset <- read.csv(DATASET_FILENAME, encoding = "UTF-8", stringsAsFactors = FALSE)
   
   normalisedDataset <<- preprocessing(originalDataset)
   
-  print("Leaving main")
+  #Randomised the normalised dataset row wise, ready for splitting into test and training split.
+  randomisedDataset <- normalisedDataset[sample(nrow(normalisedDataset)),]
   
-} #endof main()
+  #Create a training Sample Size
+  trainingSampleSize <- round(nrow(randomisedDataset))*(HOLDOUT/100)
+  
+  #Create the training Set
+  trainingSet <- normalisedDataset[1:trainingSampleSize,]
+  
+  #Create the test Set
+  testSet <- normalisedDataset[-(1:trainingSampleSize),]
+
+  #Create a stratified data frame ready for stratified k-fold validation
+  stratifiedData <- stratifyDataset(normalisedDataset,OUTPUT_FIELD,K_FOLDS)
+  
+  #Test object to see if the kFoldTrainingSplit function is working as intended
+  test <- kFoldTrainingSplit(stratifiedData,3)
+  
+  return(test)
+
+}
 
 main()
