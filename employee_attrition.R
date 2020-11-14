@@ -56,8 +56,6 @@ source("employee_attrition_functions.R")
 
 set.seed(123)
 
-originalDataset <- read.csv(DATASET_FILENAME)
-
 # ****************
 # oneHotEncoding() :
 #   Pre-processing method to convert appropriate 
@@ -76,10 +74,10 @@ oneHotEncoding<-function(dataset,fieldsForEncoding){
   
   # One hot encode fields listed in function
   dmy <- dummyVars(OHEFormula, data = dataset)
-  trsf<- data.frame(predict(dmy, newdata = originalDataset[,which(field_types==TYPE_SYMBOLIC)]))
+  trsf<- data.frame(predict(dmy, newdata = dataset))
   
   # Combine the encoded fields back to the originalDataset
-  encodedDataset <- cbind(originalDataset[,which(field_types==TYPE_SYMBOLIC)],trsf)
+  encodedDataset <- cbind(dataset,trsf)
   
   # Remove original fields that have been hot encoded
   newData<- encodedDataset %>% select(-c(fieldsForEncoding))
@@ -227,7 +225,9 @@ preprocessing <- function(originalDataset){
 main<-function(){
   print("Inside main function")
   
-  normalisedDataset <<- preprocessing(originalDataset = originalDataset)
+  originalDataset <- read.csv(DATASET_FILENAME)
+  
+  normalisedDataset <<- preprocessing(originalDataset)
   
   print("Leaving main")
   
