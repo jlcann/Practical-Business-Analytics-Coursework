@@ -22,11 +22,6 @@ FREQCUT           <- 99/1                 # To remove zero variance fields
 NN_HIDDEN_LAYER_NEURONS <- 5 # 10 hidden layer neurons
 NN_EPOCHS <- 100 # Maximum number of training epochs
 
-DEEP_HIDDEN_LAYER_NEURONS <- c(5,5) # Number of neurons in each layer
-DEEP_STOPPING <- 2 # Number of times no improvement before stop
-DEEP_TOLERANCE <- 0.01 # Error threshold
-DEEP_ACTIVATION <- "ReLU" # Non-linear activation function
-DEEP_REPRODUCABLE <- TRUE # Set to TRUE to test training is same for each run
 
 
 # Define and then load the libraries used in this project
@@ -55,6 +50,8 @@ MYLIBRARIES<-c("outliers",
                "keras",
                "tensorflow")
 
+source(file.choose("employee_attrition_functions.R"))
+source(file.choose("employee-attrition_model_functions.R"))
 # clears the console area
 cat("\014")
 
@@ -179,6 +176,8 @@ preprocessing <- function(originalDataset){
   # Plot the % importance ordered from lowest to highest
   barplot(t(importance[order(importance$Overall),,drop=FALSE]), las = 2, border = 0, cex.names = 0.8)
   
+  
+  
   return(normalisedDataset)
 }
 # ************************************************
@@ -216,7 +215,9 @@ main<-function(){
   #Test object to see if the kFoldTrainingSplit function is working as intended
   test <- kFoldTrainingSplit(stratifiedData,3)
   
-  return(test)
+  test2 <- train_MLP_Model(normalisedDataset,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
+  
+  return(test2)
 
 }
 
