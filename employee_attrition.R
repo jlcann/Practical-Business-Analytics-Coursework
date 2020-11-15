@@ -6,7 +6,7 @@ rm(list=ls())
 
 DATASET_FILENAME  <- "employee-attrition.csv"          # Name of input dataset file
 OUTPUT_FIELD      <- "AttritionYes"             # Field name of the output class to predict
-#ORIGINAL_OUTPUT_FIELD <- "Attrition"            # Field name of the output class in the original dataset
+ORIGINAL_OUTPUT_FIELD <- "Attrition"            # Field name of the output class in the original dataset
 
 TYPE_DISCREET     <- "DISCREET"           # field is discreet (numeric)
 TYPE_ORDINAL      <- "ORDINAL"            # field is continuous numeric
@@ -220,21 +220,20 @@ main<-function(){
   #Create standard decision trees from raw data and pre-processed data
   processedDT <- createDT(trainingSet, OUTPUT_FIELD)
   
-  #randomisedRawDataset <- originalDataset[sample(nrow(originalDataset)),]
+  randomisedRawDataset <- originalDataset[sample(nrow(originalDataset)),]
   
   # The decision tree cannot be made if there are fields where each record has the same value, take these out
-  #randomisedRawDatasetWithoutConstantFields = select(randomisedRawDataset, -c("Over18", "EmployeeCount"))
-  #rawTrainingSet <- randomisedRawDatasetWithoutConstantFields[1:trainingSampleSize,]
-  #rawTestSet <- randomisedRawDatasetWithoutConstantFields[-(1:trainingSampleSize),]
-  #rawDT <- createDT(rawTrainingSet, ORIGINAL_OUTPUT_FIELD)
+  randomisedRawDatasetWithoutConstantFields = select(randomisedRawDataset, -c("Over18", "EmployeeCount"))
+  rawTrainingSet <- randomisedRawDatasetWithoutConstantFields[1:trainingSampleSize,]
+  rawTestSet <- randomisedRawDatasetWithoutConstantFields[-(1:trainingSampleSize),]
+  rawDT <- createDT(rawTrainingSet, ORIGINAL_OUTPUT_FIELD)
   
   # Evaluate and compare the decision trees
   processedDTClassifications <- getTreeClassifications(processedDT, testSet, OUTPUT_FIELD)
-  processedDTMetrics <<- getTreeMetrics(processedDTClassifications, testSet, OUTPUT_FIELD)
+  processedDTMetrics <- getTreeMetrics(processedDTClassifications, testSet, OUTPUT_FIELD)
   
-  
-  #rawDTClassifications <- getTreeClassifications(rawDT, rawTestSet, ORIGINAL_OUTPUT_FIELD)
-  #rawDTMetrics <<- getTreeMetrics(rawDTClassifications, rawTestSet, ORIGINAL_OUTPUT_FIELD, classLabelChar = 'Yes')
+  rawDTClassifications <- getTreeClassifications(rawDT, rawTestSet, ORIGINAL_OUTPUT_FIELD)
+  rawDTMetrics <- getTreeMetrics(rawDTClassifications, rawTestSet, ORIGINAL_OUTPUT_FIELD, classLabelChar = 'Yes')
   
    
   return(test)

@@ -528,20 +528,20 @@ createDT<-function(train, predictorField ,plot=TRUE){
   if (plot==TRUE){
     
     # Get importance of the input fields
-    importance<-C50::C5imp(tree, metric = "usage")
-    names(importance)<-"Strength"
+  #  importance<-C50::C5imp(tree, metric = "usage")
+   # names(importance)<-"Strength"
     
-    importance<-importance[order(importance$Strength,decreasing=TRUE),,drop=FALSE]
+  #  importance<-importance[order(importance$Strength,decreasing=TRUE),,drop=FALSE]
     
-    print(formattable::formattable(importance))
+   # print(formattable::formattable(importance))
     
     # Plot the importance fields
-    barplot(t(importance),las=2,
-            border = 0, cex.names =0.7,
-            main="Basic C5.0")
+#    barplot(t(importance),las=2,
+ #           border = 0, cex.names =0.7,
+  #          main="Basic C5.0")
     
-    dftreerules<-NDT5RuleOutput(tree)
-    print(formattable::formattable(dftreerules))
+   # dftreerules<-NDT5RuleOutput(tree)
+  #  print(formattable::formattable(dftreerules))
   }
   
   return(tree)
@@ -569,7 +569,7 @@ getTreeMetrics <- function(treeClassifications,
                            classLabelChar = NULL,
                            plot = F) {
   
-  # Get the column index with the class label. Check if the output label is intended to be numeric first
+  # Need to find the position of the (positive) column label
   if (!is.null(classLabelChar)) {
     classIndex <- which(colnames(treeClassifications) == classLabelChar)
   } else {
@@ -579,8 +579,21 @@ getTreeMetrics <- function(treeClassifications,
   # Get the probabilities for classifying the (positive) outcome
   predictedProbabilities <- treeClassifications[,classIndex]
   
-  #test data: vector with just the expected output class
+  # Use the expected values from the actual test set to compare with the predictions
   expectedResults <- testDataset[,which(colnames(testDataset) == predictorField)]
+  
+  # If the class label was of type character, we need to convert the positive class to a '1', and everything else to '0'
+  if (!is.null(classLabelChar)) {
+    resultAsDouble <- vector()
+    for (i in 1:length(expectedResults)) {
+      if (expectedResults[i] == classLabelChar) {
+        resultAsDouble <- append(resultAsDouble, 1)
+      } else {
+        resultAsDouble <- append(resultAsDouble, 0)
+      }
+    }
+    expectedResults <- resultAsDouble
+  }
   
   measures<-determineThresholdFromPredictions(predictedProbabilities, expectedResults, plot=plot, title="Hello")
   # if (plot==TRUE)
