@@ -151,29 +151,25 @@ normalise <- function(values) {
 # ************************************************
 # getTreeClassifications() :
 #
-# Put in test dataset and get out class predictions of the decision tree
-# Determine the threshold, plot the results and calculate metrics
+# Run the predict function on a decision tree to generate the predicted classes
 #
-# INPUT   :   object         - myTree        - tree
-#         :   Data Frame     - testDataset - dataset to evaluate
-#         :   string         - title        - string to plot as the chart title
-#         :   int            - classLabel   - lable given to the positive (TRUE) class
-#         :   boolean        - plot         - TRUE to output results/charts
+# INPUT
+#         :   object         - tree                          - the trained decision tree
+#         :   Data Frame     - testDataset                   - the test dataset used to make predictions on
+#         :   string         - predictorField                - the name of the predictor field in the dataset
 #
-# OUTPUT  :   List       - Named evaluation measures
+# OUTPUT  
+#         :   double vector  - predictedClassProbabilities   - a vector consisting of all of the classifications generated for the given dataset
 #
 # ************************************************
-getTreeClassifications<-function(tree,
-                                 testDataset,
-                                 predictorField){
+getTreeClassifications <- function(tree, testDataset, predictorField){
+  # Use the input fields to generate outputs from the tree
+  inputs <- testDataset[-(which(names(testDataset) == predictorField))]
   
-  positionClassOutput=which(names(testDataset)==predictorField)
+  # We use type=prob here so that we can later find the ideal threshold for the classifier
+  predictedClassProbabilities <- predict(tree, inputs, type = "prob")
   
-  # Just use the input fields to generate outputs from the tree
-  test_inputs<-testDataset[-positionClassOutput]
-  testPredictedClassProbs<-predict(tree,test_inputs, type="prob")
-  
-  return(testPredictedClassProbs)
+  return(predictedClassProbabilities)
 } #endof getTreeClassifications()
 
 # ************************************************
@@ -446,7 +442,7 @@ determineThresholdFromPredictions<-function(predicted,
     
     sensitivityROC<-toPlot$tpr[which.min(toPlot$distance)]
     specificityROC<-100-toPlot$fpr[which.min(toPlot$distance)]
-    auc<-auroc(score=test_predicted,bool=test_expected) # Estimate the AUC
+    auc<-auroc(score=predicted,bool=expected) # Estimate the AUC
     
     # Set origin point for plotting
     toPlot<-rbind(toPlot,data.frame(x=0,fpr=0,tpr=0, youdan=0,distance=0))
@@ -493,59 +489,26 @@ determineThresholdFromPredictions<-function(predicted,
 # ************************************************
 # createDT() :
 #
-# Creates A C5 Decision Tree from training and testing data
+# Creates A C5 Decision Tree from training data
 #
 # INPUT   :
-#             Data Frame     - train       - train dataset
-#             Data Frame     - test        - test dataset
-#             boolean        - plot        - TRUE = plot charts
+#             Data Frame     - train                 - train dataset
+#             charatcter     - predictorField        - the name of the predictor field in the dataset
 #
 # OUTPUT
-#         :   Data Frame     - measures  -  the performance metrics of the tree
+#         :   Data Frame     - measures    -  the performance metrics of the tree
 #
 # ************************************************
-createDT<-function(train, predictorField ,plot=TRUE){
+createDT <- function(train, predictorField) {
+  # Need to produce a data frame from the predictor fields and a vector for the output
+  outputClassIndex <- which(names(train) == predictorField)
+  inputs <- train[-outputClassIndex]
+  output <- train[, outputClassIndex]
   
-  positionClassOutput<-which(names(train)==predictorField)
-  
-  # train data: dataframe with the input fields
-  train_inputs<-train[-positionClassOutput]
-  
-  # train data: vector with the expected output
-  train_expected<-train[,positionClassOutput]
-  
-  tree<-C50::C5.0(x=train_inputs,
-                  y=factor(train_expected),
-                  rules=TRUE,
-                  trials=1)
-  
-  #measures<-getTreeClassifications(tree = tree,
-   #                                testDataset = test,
-    #                               predictorField = predictorField,
-     #                              title="Original Dataset. DT C5.0")
-  
-  # this Function to output the tree as rules to a file
-  if (plot==TRUE){
-    
-    # Get importance of the input fields
-  #  importance<-C50::C5imp(tree, metric = "usage")
-   # names(importance)<-"Strength"
-    
-  #  importance<-importance[order(importance$Strength,decreasing=TRUE),,drop=FALSE]
-    
-   # print(formattable::formattable(importance))
-    
-    # Plot the importance fields
-#    barplot(t(importance),las=2,
- #           border = 0, cex.names =0.7,
-  #          main="Basic C5.0")
-    
-   # dftreerules<-NDT5RuleOutput(tree)
-  #  print(formattable::formattable(dftreerules))
-  }
+  tree<-C50::C5.0(x=inputs, y=factor(output), rules=T, trials=1)
   
   return(tree)
-} #endof simpleDT()
+} #endof createDT()
 
 
 # ************************************************
@@ -554,33 +517,29 @@ createDT<-function(train, predictorField ,plot=TRUE){
 # Generates metrics for a decision tree
 #
 # INPUT   :
-#             Data Frame     - train       - train dataset
-#             Data Frame     - test        - test dataset
-#             boolean        - plot        - TRUE = plot charts
+#             Data Frame     - treeClassifications       - classifications made by a decision tree
+#             Data Frame     - testDataset               - test dataset used to generate the classifications
+#             character      - predictorField            - the name of the predictor field in the dataset 
+#             double         - classLabelDouble          - the class label for the predictor field if a double (default=1)
+#             character      - classLabelChar            - the class label for the predictor field if a character (default=NULL)
 #
 # OUTPUT
-#         :   Data Frame     - measures  -  the performance metrics of the tree
+#         :   Data Frame     - metrics                   - a range of performance metrics for the tree on the test dataset
 #
 # ************************************************
-getTreeMetrics <- function(treeClassifications,
-                           testDataset,
-                           predictorField,
-                           classLabel = 1,
-                           classLabelChar = NULL,
-                           plot = F) {
-  
+getTreeMetrics <- function(treeClassifications, testDataset, predictorField, classLabelDouble = 1, classLabelChar = NULL) {
   # Need to find the position of the (positive) column label
   if (!is.null(classLabelChar)) {
     classIndex <- which(colnames(treeClassifications) == classLabelChar)
   } else {
-    classIndex <- which(as.numeric(colnames(treeClassifications)) == classLabel)
+    classIndex <- which(as.numeric(colnames(treeClassifications)) == classLabelDouble)
   }
   
   # Get the probabilities for classifying the (positive) outcome
-  predictedProbabilities <- treeClassifications[,classIndex]
+  predictedProbabilities <- treeClassifications[, classIndex]
   
   # Use the expected values from the actual test set to compare with the predictions
-  expectedResults <- testDataset[,which(colnames(testDataset) == predictorField)]
+  expectedResults <- testDataset[, which(colnames(testDataset) == predictorField)]
   
   # If the class label was of type character, we need to convert the positive class to a '1', and everything else to '0'
   if (!is.null(classLabelChar)) {
@@ -595,9 +554,7 @@ getTreeMetrics <- function(treeClassifications,
     expectedResults <- resultAsDouble
   }
   
-  measures<-determineThresholdFromPredictions(predictedProbabilities, expectedResults, plot=plot, title="Hello")
-  # if (plot==TRUE)
-  #  NprintMeasures(results=measures,title=title)
+  measures<-determineThresholdFromPredictions(predictedProbabilities, expectedResults, title="")
   
   return(measures)
 }
