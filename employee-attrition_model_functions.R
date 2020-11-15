@@ -8,7 +8,7 @@ train_MLP_Model <- function(train, outputField, hiddenNeurons, numEpochs, test){
   
   #Create a list containing the expected outputs for the classifier 
   #and convert them to categorical, also required by the model.
-  expectedOutput <- to_categorical(train[,(which(names(train)==outputField))])
+  expectedOutput <<- to_categorical(train[,(which(names(train)==outputField))])
 
   
   #Create the model classifier, ready for layers and parameters to be added.
@@ -22,7 +22,7 @@ train_MLP_Model <- function(train, outputField, hiddenNeurons, numEpochs, test){
     layer_dropout(0.2) %>%
     #As this isn't the first layer, we use the argument passed into the function 'hidden neurons'
     layer_dense(units = hiddenNeurons, activation = "relu") %>%
-    layer_dropout(0.2) %>%
+    layer_dropout(0.3) %>%
     #Output layer, units must be equal to unique classes, softmax is universally used for classification problems
     #as the activation function.
     layer_dense(units = 2, activation = "softmax")
@@ -48,7 +48,7 @@ train_MLP_Model <- function(train, outputField, hiddenNeurons, numEpochs, test){
       batch_size = 5,
       validation_split = 0.2
     )
-  print("HELLO HELLO HELLO HELLO")
+
   test_MLP_Model(test,outputField,model_Classifier)
 
   
@@ -56,15 +56,14 @@ train_MLP_Model <- function(train, outputField, hiddenNeurons, numEpochs, test){
 
 
 test_MLP_Model<-function(testData,outputField,mlp_model){
-  print("HELLO HELLO HELLO HELLO")
+
   test <- as.matrix(testData[-(which(names(testData)==outputField))])
   expectedTestOutput <- testData[,(which(names(testData)==outputField))]
-  print("HELLO HELLO HELLO HELLO")
-  # Generate class membership probabilities
-  # Column 1 is for class 0 (bad loan) and column 2 is for class 1 (good loan)
   
   testPredicted<-predict(mlp_model,test)
   
+  #Return the results model with the best threshold determined.
+  #TestPredicted Col 2 is Yes to Attrition Yes, meaning person will leave job.
   results <- determineThreshold(testPredicted[,2],expectedTestOutput)
   
   return(results)
@@ -74,9 +73,18 @@ test_MLP_Model<-function(testData,outputField,mlp_model){
 
 #NEED TO FINISH THIS FUNCTION
 determineThreshold<-function(testPredicted, expectedTestOutput){
+  
+  thresholds<- data.frame()
+  
   for (threshold in seq(0,1,by=0.01)){
     result<-evaluateModel(testPredicted, expectedTestOutput,threshold)
+    thresholds<-rbind(thresholds, data.frame(x=threshold,fpr=result$FPR,tpr=result$TPR))
   }
+  
+  thresholds$distance<-sqrt(((100-thresholds$tpr)^2)+((thresholds$fpr)^2))
+  minDistance <- thresholds$x[which.min(thresholds$distance)]
+  print(minDistance)
+  return(evaluateModel(testPredicted, expectedTestOutput, minDistance))
 }
 
 evaluateModel<-function(testPredicted,expectedTestOutput,threshold){

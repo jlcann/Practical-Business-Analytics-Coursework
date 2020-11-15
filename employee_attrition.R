@@ -19,8 +19,8 @@ HOLDOUT           <- 70                   # Holdout percentage for training set
 K_FOLDS           <- 10                   # Number of holds for stratified cross validation
 FREQCUT           <- 99/1                 # To remove zero variance fields
 
-NN_HIDDEN_LAYER_NEURONS <- 5 # 10 hidden layer neurons
-NN_EPOCHS <- 50 # Maximum number of training epochs
+NN_HIDDEN_LAYER_NEURONS <- 10 # 10 hidden layer neurons
+NN_EPOCHS <- 50# Maximum number of training epochs
 
 
 
@@ -62,7 +62,7 @@ pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
 source("employee_attrition_functions.R")
 source("employee-attrition_model_functions.R")
 
-set.seed(123)
+set.seed(321)
 
 
 # ************************************************
