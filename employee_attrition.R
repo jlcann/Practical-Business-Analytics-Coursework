@@ -215,8 +215,8 @@ main<-function(){
   #Test object to see if the kFoldTrainingSplit function is working as intended
   test <- kFoldTrainingSplit(stratifiedData,3)
   #Uncomment below to test the MLP model with 70/30 holdout
-  #modelFirstIterration <- train_MLP_Model(trainingSet,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
-  
+  first_model <<- train_MLP_Model(trainingSet,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS,testSet)
+
   return(test)
 
 }
