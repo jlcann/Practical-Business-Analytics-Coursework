@@ -182,20 +182,20 @@ getTreeClassifications <- function(tree, testDataset, predictorField){
 #
 # OUTPUT: data frame of rules, class and anticedents
 # ************************************************
-NDT5RuleOutput<-function(tree){
-  #library(stringr)
+DecisionTreeRules<-function(tree){
+  #library(stringr) already imported in the main script file
   x<-summary(tree)[1]
   x<-substr(x,regexpr("Rules:",x)[1]+8,nchar(x))
   x<-substr(x,1,regexpr("Evaluation on training data",x)[1]-1)
   x<-gsub("[\n\t]", "*", x)
-  df_of_rules<-data.frame(matrix(ncol=3,nrow=tree$size),stringsAsFactors = FALSE)
-  df_of_rules<-setNames(df_of_rules,c("Rule","Class","Anti"))
+  dataFrameWithRules<-data.frame(matrix(ncol=3,nrow=tree$size),stringsAsFactors = FALSE)
+  dataFrameWithRules<-setNames(dataFrameWithRules,c("Rule","Class","Anti"))
   
   numberofrules<-tree$size
-  # 271019 allow for multiple trees (i.e. boosted)
+
   if (length(numberofrules)>1){
     numberofrules<-numberofrules[1]
-    warning("Prof Nick says: More than one tree found. Extracting rules for just the first")
+    warning("More than one tree have been found. Extracting and displaying rules for just the first one")
   }
   
   totalAnticedents<-0
@@ -209,18 +209,18 @@ NDT5RuleOutput<-function(tree){
     totalAnticedents=totalAnticedents+NumAnticedents
     classpos<-regexpr("class ",x)+6
     classID<-as.numeric(substr(x,classpos,classpos))  #This has the class of the rule, i.e. {0,1}
-    df_of_rules$Rule[ruleNumber]<-onerule
-    df_of_rules$Class[ruleNumber]<-ifelse(classID==0,"BAD","GOOD") # Convert class to label
-    df_of_rules$Anti[ruleNumber]<-NumAnticedents
+    dataFrameWithRules$Rule[ruleNumber]<-onerule
+    dataFrameWithRules$Class[ruleNumber]<-ifelse(classID==0,"LEAVE","STAY") # Convert class to label
+    dataFrameWithRules$Anti[ruleNumber]<-NumAnticedents
     x<-substr(x,classpos,nchar(x))
     st<-regexpr("\\*\\*",x)[1]+2 #move past the rule ID
     x<-substr(x,st,nchar(x))
   }
-  return(df_of_rules)
+  return(dataFrameWithRules)
 }
 
 # ************************************************
-# Nauroc() :
+# areaUnderCurve() :
 #
 # Calculate the Area Under Curve (AUC) for ROC
 #
@@ -231,7 +231,7 @@ NDT5RuleOutput<-function(tree){
 #
 # ************************************************
 # By Miron Kursa https://mbq.me
-auroc <- function(score, bool) {
+areaUnderCurve <- function(score, bool) {
   n1 <- sum(!bool)
   n2 <- sum(bool)
   U  <- sum(rank(score)[!bool]) - n1 * (n1 + 1) / 2
@@ -240,7 +240,7 @@ auroc <- function(score, bool) {
 
 
 # ************************************************
-# NcalcMeasures() :
+# calculateMeasures() :
 #
 # Evaluation measures for a confusion matrix
 #
@@ -252,24 +252,22 @@ auroc <- function(score, bool) {
 #        TN        - double - True Negative records
 #        FN        - double - False Negative records
 #        accuracy  - double - accuracy measure
-#        pgood     - double - precision for "good" (values are 1) measure
-#        pbad      - double - precision for "bad" (values are 1) measure
+#        attrYes   - double - precision for "Yes" (values are 1) measure
+#        attrNo    - double - precision for "No" (values are 1) measure
 #        FPR       - double - FPR measure
 #        TPR       - double - FPR measure
 #        TNR       - double - TNR measure
 #        MCC       - double - Matthew's Correlation Coeficient
-#
-# 080819NRT added TNR measure
 # ************************************************
-NcalcMeasures<-function(TP,FN,FP,TN){
+calculateMeasures<-function(TP,FN,FP,TN){
   
   retList<-list(  "TP"=TP,
                   "FN"=FN,
                   "TN"=TN,
                   "FP"=FP,
                   "accuracy"=100.0*((TP+TN)/(TP+FP+FN+TN)),
-                  "pgood"=   100.0*(TP/(TP+FP)),
-                  "pbad"=    100.0*(TN/(FN+TN)),
+                  "attrNo"=  100.0*(TP/(TP+FP)),
+                  "attrYes"= 100.0*(TN/(FN+TN)),
                   "FPR"=     100.0*(FP/(FP+TN)),
                   "TPR"=     100.0*(TP/(TP+FN)),
                   "TNR"=     100.0*(TN/(FP+TN)),
@@ -280,47 +278,34 @@ NcalcMeasures<-function(TP,FN,FP,TN){
 
 
 # ************************************************
-# NcalcConfusion() :
+# calculateConfusion() :
 #
-# Calculate a confusion matrix for 2-class classifier
+# Calculate a confusion matrix for 2-class classifier - Yes/1 and No/0
 # INPUT: vector - expectedClass  - {0,1}, Expected outcome from each row (labels)
 #        vector - predictedClass - {0,1}, Predicted outcome from each row (labels)
 #
-# OUTPUT: A list with the  entries from NcalcMeasures()
-#
-# 070819NRT convert values to doubles to avoid integers overflowing
-# Updated to the following definition of the confusion matrix
-#
-# A good loan is indicated when $Status=1 and bad when $Status=0
-
-#                    ACTUAL
-#               ------------------
-# PREDICTED     GOOD=1   |  BAD=0
-#               ------------------
-#     GOOD=1      TP     |    FP
-#               ==================
-#     BAD=0       FN     |    TN
-#
-#
+# OUTPUT: A list with the  entries from calculateMeasures()
 # ************************************************
-NcalcConfusion<-function(expectedClass,predictedClass){
-  
+calculateConfusion<-function(expectedClass,predictedClass){
+
+  #Assign the resulting table into our 'confusion'variable 
+
   confusion<-table(factor(predictedClass,levels=0:1),factor(expectedClass,levels=0:1))
   
-  # This "converts" the above into our preferred format
+  # The following bit places the information from the table above in our preferred format
   
   TP<-as.double(confusion[2,2])
   FN<-as.double(confusion[1,2])
   FP<-as.double(confusion[2,1])
   TN<-as.double(confusion[1,1])
   
-  return(NcalcMeasures(TP,FN,FP,TN))
+  return(calculateMeasures(TP,FN,FP,TN))
   
-} #endof NcalcConfusion()
+} #endof calculateConfusion()
 
 
 # ************************************************
-# NEvaluateClassifier() :
+# classifierEvaluation() :
 #
 # Use dataset to generate predictions from model
 # Evaluate as classifier using threshold value
@@ -333,18 +318,18 @@ NcalcConfusion<-function(expectedClass,predictedClass){
 #                        - Predicted class probability
 #
 # ************************************************
-NEvaluateClassifier<-function(test_predicted,test_expected,threshold) {
+classifierEvaluation<-function(test_predicted,test_expected,threshold) {
   
   predictedClass<-ifelse(test_predicted<threshold,0,1)
   
-  results<-NcalcConfusion(expectedClass=test_expected,
+  results<-calculateConfusion(expectedClass=test_expected,
                           predictedClass=predictedClass)
   
   return(results)
-} #endof NEvaluateClassifier()
+} #endof classifierEvaluation()
 
 # ************************************************
-# determineThresholdFromPredictions() :
+# calculateThreshold() :
 #
 # For the range of threholds [0,1] calculate a confusion matrix
 # and classifier metrics.
@@ -363,7 +348,7 @@ NEvaluateClassifier<-function(test_predicted,test_expected,threshold) {
 #                        - AUC - area under the ROC curve
 #                        - Predicted class probability
 # ************************************************
-determineThresholdFromPredictions<-function(predicted,
+calculateThreshold<-function(predicted,
                               expected,
                               plot=TRUE,
                               title=""){
@@ -371,7 +356,7 @@ determineThresholdFromPredictions<-function(predicted,
   
   #Vary the threshold
   for(threshold in seq(0,1,by=0.01)){
-    results<-NEvaluateClassifier(test_predicted=predicted,
+    results<-classifierEvaluation(test_predicted=predicted,
                                  test_expected=expected,
                                  threshold=threshold)
     toPlot<-rbind(toPlot,data.frame(x=threshold,fpr=results$FPR,tpr=results$TPR))
@@ -437,12 +422,11 @@ determineThresholdFromPredictions<-function(predicted,
     legend("bottom",c("TPR","1-FPR","Distance","Youdan"),col=c("blue","red","green","purple"),lty=1:2,lwd=2)
     text(x=0,y=50, adj = c(-0.2,2),cex=1,col="black",paste("THRESHOLDS:\nEuclidean=",minEuclidean,"\nYoudan=",maxYoudan))
     
-    # ************************************************
-    # 121020NRT ROC graph
+    # ROC graph
     
     sensitivityROC<-toPlot$tpr[which.min(toPlot$distance)]
     specificityROC<-100-toPlot$fpr[which.min(toPlot$distance)]
-    auc<-auroc(score=predicted,bool=expected) # Estimate the AUC
+    auc<-areaUnderCurve(score=predicted,bool=expected) 
     
     # Set origin point for plotting
     toPlot<-rbind(toPlot,data.frame(x=0,fpr=0,tpr=0, youdan=0,distance=0))
@@ -476,15 +460,15 @@ determineThresholdFromPredictions<-function(predicted,
   myThreshold<-minEuclidean      # Min Distance should be the same as analysis["threshold"]
   
   #Use the "best" distance threshold to evaluate classifier
-  results<-NEvaluateClassifier(test_predicted=predicted,
+  results<-classifierEvaluation(test_predicted=predicted,
                                test_expected=expected,
                                threshold=myThreshold)
   
   results$threshold<-myThreshold
-  results$AUC<-auroc(score=predicted,bool=expected) # Estimate the AUC
+  results$AUC<-areaUnderCurve(score=predicted,bool=expected) # Estimate the AUC
   
   return(results)
-} #endof myPerformancePlot()
+} #endof calculateThreshold()
 
 # ************************************************
 # createDT() :
@@ -494,18 +478,38 @@ determineThresholdFromPredictions<-function(predicted,
 # INPUT   :
 #             Data Frame     - train                 - train dataset
 #             charatcter     - predictorField        - the name of the predictor field in the dataset
+#             boolean        - plot                  - if true, also plots tree rules
 #
 # OUTPUT
 #         :   Data Frame     - measures    -  the performance metrics of the tree
 #
 # ************************************************
-createDT <- function(train, predictorField) {
+createDT <- function(train, predictorField, plot = F) {
   # Need to produce a data frame from the predictor fields and a vector for the output
   outputClassIndex <- which(names(train) == predictorField)
   inputs <- train[-outputClassIndex]
   output <- train[, outputClassIndex]
   
   tree<-C50::C5.0(x=inputs, y=factor(output), rules=T, trials=1)
+  
+  if (plot){
+    
+    # Get importance of the input fields
+    importance<-C50::C5imp(tree, metric = "usage")
+    names(importance)<-"Strength"
+    
+    importance<-importance[order(importance$Strength,decreasing=TRUE),,drop=FALSE]
+    
+    print(formattable::formattable(importance))
+    
+    # Plot the importance fields
+    barplot(t(importance),las=2,
+            border = 0, cex.names =0.7,
+            main="Basic C5.0")
+    
+    dftreerules<-DecisionTreeRules(tree)
+    print(formattable::formattable(dftreerules))
+  }
   
   return(tree)
 } #endof createDT()
@@ -554,7 +558,7 @@ getTreeMetrics <- function(treeClassifications, testDataset, predictorField, cla
     expectedResults <- resultAsDouble
   }
   
-  measures<-determineThresholdFromPredictions(predictedProbabilities, expectedResults, title="")
+  measures <- calculateThreshold(predictedProbabilities, expectedResults, title="")
   
   return(measures)
 }

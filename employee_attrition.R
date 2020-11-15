@@ -220,7 +220,7 @@ main<-function(){
   test <- kFoldTrainingSplit(stratifiedData,3)
   
   #Create standard decision trees from raw data and pre-processed data
-  processedDT <- createDT(trainingSet, OUTPUT_FIELD)
+  processedDT <- createDT(trainingSet, OUTPUT_FIELD, T)
   
   randomisedRawDataset <- originalDataset[sample(nrow(originalDataset)),]
   
