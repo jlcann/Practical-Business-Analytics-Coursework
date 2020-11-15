@@ -459,6 +459,8 @@ calculateThreshold<-function(predicted,
   
   myThreshold<-minEuclidean      # Min Distance should be the same as analysis["threshold"]
   
+  
+  # TODO: Don't call this function from here, call it from within getTreeMetrics. Just return the threshold from this function
   #Use the "best" distance threshold to evaluate classifier
   results<-classifierEvaluation(test_predicted=predicted,
                                test_expected=expected,
@@ -492,6 +494,7 @@ createDT <- function(train, predictorField, plot = F) {
   
   tree<-C50::C5.0(x=inputs, y=factor(output), rules=T, trials=1)
   
+  # TODO: Discussional really, I don't think we need to do this plot at all
   if (plot){
     
     # Get importance of the input fields
@@ -558,6 +561,10 @@ getTreeMetrics <- function(treeClassifications, testDataset, predictorField, cla
     expectedResults <- resultAsDouble
   }
   
+  # TODO: Calculate the threshold, then produce the other metrics and return the dataframe to metrics
+  # threshold <- calculateThreshold(predicdProbabilities, expectedResults)
+  # metrics <- calculateTreeMetrics(predictedProbabilities, expectedResults, threshold)
+  # return(metrics)
   measures <- calculateThreshold(predictedProbabilities, expectedResults, title="")
   
   return(measures)
