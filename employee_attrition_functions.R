@@ -3,42 +3,6 @@
 manualTypes <- data.frame()
 
 # ************************************************
-# readDataset() :
-#
-# Read a CSV file from working directory
-#
-# INPUT: string - csvFilename - CSV filename
-#
-# OUTPUT : data frame - contents of the headed CSV file
-# ************************************************
-readDataset<-function(csvFilename){
-  
-  dataset<-read.csv(csvFilename,encoding="UTF-8",stringsAsFactors = FALSE)
-  
-  # The field names "confuse" some of the library algorithms
-  # As they do not like spaces, punctuation, etc.
-  names(dataset)<-removePunctuation(names(dataset))
-  
-  print(paste("CSV dataset",csvFilename,"has been read. Records=",nrow(dataset)))
-  return(dataset)
-}
-
-
-# ************************************************
-# removePunctuation()
-#
-# INPUT: String - fieldName - name of field
-#
-# OUTPUT : String - name of field with punctuation removed
-# ************************************************
-removePunctuation<-function(fieldName){
-  return(gsub("[[:punct:][:blank:]]+", "", fieldName))
-}
-
-
-
-
-# ************************************************
 # basicStatistics()
 # Output simple dataset field analysis results as a table in "Viewer"
 #
@@ -56,8 +20,6 @@ removePunctuation<-function(fieldName){
 # ************************************************
 basicStatistics<-function(dataset,...){
   
-  params <- list(...)
-  
   tidyTable<-data.frame(Field=names(dataset),
                         Catagorical=FALSE,
                         Symbols=0,
@@ -67,10 +29,6 @@ basicStatistics<-function(dataset,...){
                         Max=0.0,
                         Skew=0.0,
                         stringsAsFactors = FALSE)
-  
-  if (length(params)>0){
-    names(tidyTable)[1]<-params[1]
-  }
   
   for (i in 1:ncol(dataset)){
     isFieldAfactor<-!is.numeric(dataset[,i])
@@ -146,20 +104,48 @@ FieldTypes<-function(dataset){
   return(field_types)
 }
 
-
-# ************************************************
-# rescaleField() :
+# ****************
+# oneHotEncoding() :
+#   Pre-processing method to convert appropriate 
+#   categorical fields into binary representation
 #
-# Rescale an numeric field to be between 0-1.
+# INPUT       :   dataframe - dataset           - dataset to one hot encode
+#                 vector    - fieldsForEncoding -  
 #
-# INPUT: Vector to rescale
-#
-# OUTPUT : Vector scaled between 0,1
-# ************************************************
-
-rescaleField<-function(input){
-  return((input-min(input))/(max(input)-min(input)))
+# OUTPUT      :   Encoded fields
+# ****************
+oneHotEncoding<-function(dataset,fieldsForEncoding){
+  # Combine input fields for encoding
+  stringToFormulate <- substring(paste(" + ", fieldsForEncoding, sep = "", collapse = ""), 4)
+  
+  OHEFormula <- as.formula(paste("~",stringToFormulate))
+  
+  # One hot encode fields listed in function
+  dmy <- dummyVars(OHEFormula, data = dataset)
+  trsf<- data.frame(predict(dmy, newdata = dataset))
+  
+  # Combine the encoded fields back to the originalDataset
+  encodedDataset <- cbind(dataset,trsf)
+  
+  # Remove original fields that have been hot encoded
+  newData<- encodedDataset %>% select(-c(fieldsForEncoding))
+  # Return new dataset
+  return(newData)
 }
+
+
+# ************************************************
+# normalise() :
+#   Normalise fields between 1 and 0
+#
+# INPUT       :   Fields to normalise
+#
+# OUTPUT      :   Normalised fields between 1 and 0
+# ************************************************
+normalise <- function(values) {
+  return ((values - min(values)) / (max(values) - min(values)))
+}
+
 
 
 # ************************************************
@@ -185,7 +171,7 @@ NPREPROCESSING_discreetNumeric<-function(dataset,field_types,cutoff){
     if (field_types[field]==TYPE_NUMERIC) {
       
       #Scale the whole field (column) to between 0 and 1
-      scaled_column<-rescaleField(dataset[,field])
+      scaled_column<-normalise(dataset[,field])
       
       #Generate the "cutoff" points for each of 10 bins
       #so we will get 0-0.1, 0.1-0.2...0.9-1.0
@@ -286,4 +272,131 @@ NplotOutliers<-function(sorted,outliers,fieldName){
   plot(1:length(sorted),sorted,pch=1,xlab="Unique records",ylab=paste("Sorted values",fieldName),bty="n")
   if (length(outliers)>0)
     points(outliers,sorted[outliers],col="red",pch=19)
+}
+
+
+
+# ************************************************
+# stratifyDataset() :
+#
+# Separate the classes in the dataset (AttritionYes = 1, and = 0)
+#
+# For each of the classes, calculate the amount of records that 
+# will appear in each of the folds.
+# Give each of these groups of records their own fold id.
+#
+# Combine the two classes back together into a single data.frame and randomize.
+#
+# Data is now ready to be used for the kFoldTrainingSplit() and kFoldModel()
+# functions.
+# 
+# Return the combined data.frame.
+#
+#
+# INPUT   : dataset - data.frame - a normalised dataset ready for stratification.
+#         : output - string - String containing the classes to predict (AttritionYes).
+#         : folds - Integer - Number of folds to be used in the Stratified Cross Validation.
+#
+#
+# OUTPUT  : stratifiedData - data.frame - the stratified dataset ready for Cross Validation.
+# ************************************************
+
+
+stratifyDataset <- function(dataset, output, folds){
+
+  #Create a variable containing all the unique classes in the column of our output variable 
+  uniqueClasses <- unique(dataset[,output])
+  
+  #Create a variable containing all the row positions where class = uniqueClasses[1], in our case. 1 = Yes, (leaving job)
+  rowPositions <- which(dataset[,output]==uniqueClasses[1])
+  
+  #Create two data frames, one containing all rows in which employees are leaving, and the other in which the employees are staying
+  leavingYes<- dataset[rowPositions,]
+  leavingNo<- dataset[-rowPositions,]
+  
+  #Print the totals for each class
+  print(paste("Number of people leaving: ", nrow(leavingYes)))
+  print(paste("Number of people staying: ", nrow(leavingNo)))
+  
+  #Create a list for each of the data frames, which contains the fold sequence (1,2,3,4...) up to the amount of rows per data frame.
+  #If there are 200 rows, and 10 folds, the sequence of 1 to 10(Folds), will repeat 200/10 times, so 20 times.
+  foldSequenceYes <- rep(seq(1:folds),ceiling(nrow(leavingYes)/folds))
+  foldSequenceNo  <- rep(seq(1:folds),ceiling(nrow(leavingNo)/folds))
+  
+  #Creates a new column and appends it to each of the data frames. The columns content is of each of the sequence lists above into it. 
+  leavingYes$foldIds <- foldSequenceYes[1:nrow(leavingYes)]
+  leavingNo$foldIds  <- foldSequenceNo[1:nrow(leavingNo)]
+  
+  #Bind the two data frames back together, now each of them have their assigned folds.
+  stratifiedData<-rbind(leavingYes, leavingNo)
+  
+  #Randomise the new data frame before returning it.
+  stratifiedData <- stratifiedData[sample(nrow(stratifiedData)),]
+  
+  #Returns the combined and randomised data frame.
+  return(stratifiedData)
+
+} 
+
+# ************************************************
+# kFoldTrainingSplit() :
+#
+# Separates a stratified dataset into training and testing data.frames
+# based on the desired fold
+#
+# INPUT   : dataset - data.frame - Stratified dataset.
+#         : fold - integer - FoldIds number for the test set
+#
+# OUTPUT  : separatedData - List - list containing two data.frames, test and train
+#
+#
+#*************************************************
+
+kFoldTrainingSplit <- function(dataset, fold){
+  
+  #Create a data.frame containing all of the rows with FoldIds == fold.
+  testSet <- subset(dataset, subset = foldIds==fold)
+  
+  #Create a data.frame contraining the rest of the rows, with FoldIds != fold.
+  trainingSet <- subset(dataset, subset = foldIds!=fold)
+  
+  #Merge the two data.frames into a single list, ready to be returned.
+  separatedData <- list(test=testSet, train=trainingSet)
+  
+  #Return the separated data in list form ready for modelling. 
+  return(separatedData)
+  
+}
+
+
+# ************************************************
+# kFoldModel() :
+#
+# 
+#
+# INPUT   : dataset - dataset contained in data.frame
+#           FUN - Function Name (Model)
+#
+# OUTPUT : None
+# ************************************************
+
+#NEEDS TO BE FINISHED - NEED TO KNOW MORE ABOUT PLOT AND MEASURE RESULTS FIRST.
+kFoldModel <- function(dataset,FUN,...){
+  
+  results <- data.frame()
+  
+  for (i in 1:K_FOLDS) {
+    
+    separatedData<-kFoldTrainingSplit(dataset,i)
+    
+    modelMeasures<-FUN(train=separatedData$train,
+                       test=separatedData$test)
+    
+  }
+ 
+  
+train_MLP_Model <- function(train, outputField, hiddenNeurons, numEpochs){
+  trainingData <- train[-(which(names(train)==outputField))]
+  expectedOutput <- train[,(which(names(train)==outputField))]
+  }   
 }
