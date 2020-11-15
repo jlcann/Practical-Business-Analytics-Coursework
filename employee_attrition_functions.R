@@ -163,39 +163,17 @@ normalise <- function(values) {
 # OUTPUT  :   List       - Named evaluation measures
 #
 # ************************************************
-getTreeClassifications<-function(myTree,
+getTreeClassifications<-function(tree,
                                  testDataset,
-                                 title,
-                                 classLabel=1,
-                                 plot=TRUE){
+                                 predictorField){
   
-  positionClassOutput=which(names(testDataset)==OUTPUT_FIELD)
+  positionClassOutput=which(names(testDataset)==predictorField)
   
-  #test data: dataframe with with just input fields
+  # Just use the input fields to generate outputs from the tree
   test_inputs<-testDataset[-positionClassOutput]
+  testPredictedClassProbs<-predict(tree,test_inputs, type="prob")
   
-  # Generate class membership probabilities
-  # Column 1 is for class 0 (bad loan) and column 2 is for class 1 (good loan)
-  
-  testPredictedClassProbs<-predict(myTree,test_inputs, type="prob")
-  
-  # Get the column index with the class label
-  classIndex<-which(as.numeric(colnames(testPredictedClassProbs))==classLabel)
-  
-  # Get the probabilities for classifying the good loans
-  test_predictedProbs<-testPredictedClassProbs[,classIndex]
-  
-  #test data: vector with just the expected output class
-  test_expected<-testDataset[,positionClassOutput]
-  
-  measures<-NdetermineThreshold(test_expected=test_expected,
-                                test_predicted=test_predictedProbs,
-                                plot=plot,
-                                title=title)
- # if (plot==TRUE)
- #  NprintMeasures(results=measures,title=title)
-  
-  return(measures)
+  return(testPredictedClassProbs)
 } #endof getTreeClassifications()
 
 # ************************************************
@@ -370,11 +348,11 @@ NEvaluateClassifier<-function(test_predicted,test_expected,threshold) {
 } #endof NEvaluateClassifier()
 
 # ************************************************
-# NdetermineThreshold() :
+# determineThresholdFromPredictions() :
 #
 # For the range of threholds [0,1] calculate a confusion matrix
 # and classifier metrics.
-# Deterime "best" threshold based on either distance or Youdan
+# Determine "best" threshold based on either distance or Youdan
 # Plot threshold chart and ROC chart
 #
 # Plot the results
@@ -388,21 +366,17 @@ NEvaluateClassifier<-function(test_predicted,test_expected,threshold) {
 #                        - Threshold at min Euclidean distance
 #                        - AUC - area under the ROC curve
 #                        - Predicted class probability
-#
-# 241019NRT - added plot flag and title for charts
-# 311019NRT - added axis bound checks in abline plots
-# 191020NRT - Updated to use own ROC plot & calculate AUC
 # ************************************************
-NdetermineThreshold<-function(test_predicted,
-                              test_expected,
+determineThresholdFromPredictions<-function(predicted,
+                              expected,
                               plot=TRUE,
                               title=""){
   toPlot<-data.frame()
   
   #Vary the threshold
   for(threshold in seq(0,1,by=0.01)){
-    results<-NEvaluateClassifier(test_predicted=test_predicted,
-                                 test_expected=test_expected,
+    results<-NEvaluateClassifier(test_predicted=predicted,
+                                 test_expected=expected,
                                  threshold=threshold)
     toPlot<-rbind(toPlot,data.frame(x=threshold,fpr=results$FPR,tpr=results$TPR))
   }
@@ -506,39 +480,38 @@ NdetermineThreshold<-function(test_predicted,
   myThreshold<-minEuclidean      # Min Distance should be the same as analysis["threshold"]
   
   #Use the "best" distance threshold to evaluate classifier
-  results<-NEvaluateClassifier(test_predicted=test_predicted,
-                               test_expected=test_expected,
+  results<-NEvaluateClassifier(test_predicted=predicted,
+                               test_expected=expected,
                                threshold=myThreshold)
   
   results$threshold<-myThreshold
-  results$AUC<-auroc(score=test_predicted,bool=test_expected) # Estimate the AUC
+  results$AUC<-auroc(score=predicted,bool=expected) # Estimate the AUC
   
   return(results)
 } #endof myPerformancePlot()
 
 # ************************************************
-# simpleDT() :
+# createDT() :
 #
-# Create C5 Decision Tree on the raw dataset
-# A decision tree may not need the dataset to be pre-processed
+# Creates A C5 Decision Tree from training and testing data
 #
 # INPUT   :
-#             Data Frame     - train       - original train dataset
-#             Data Frame     - test        - original test dataset
+#             Data Frame     - train       - train dataset
+#             Data Frame     - test        - test dataset
 #             boolean        - plot        - TRUE = plot charts
 #
-# OUTPUT  :
-#         :   Data Frame     - measures  - performance metrics
+# OUTPUT
+#         :   Data Frame     - measures  -  the performance metrics of the tree
 #
 # ************************************************
-simpleDT<-function(train,test,plot=TRUE){
+createDT<-function(train, predictorField ,plot=TRUE){
   
-  positionClassOutput<-which(names(train)==OUTPUT_FIELD)
+  positionClassOutput<-which(names(train)==predictorField)
   
   # train data: dataframe with the input fields
   train_inputs<-train[-positionClassOutput]
   
-  # train data: vector with the expedcted output
+  # train data: vector with the expected output
   train_expected<-train[,positionClassOutput]
   
   tree<-C50::C5.0(x=train_inputs,
@@ -546,11 +519,12 @@ simpleDT<-function(train,test,plot=TRUE){
                   rules=TRUE,
                   trials=1)
   
-  measures<-getTreeClassifications(myTree = tree,
-                                   testDataset = test,
-                                   title="Original Dataset. DT C5.0")
+  #measures<-getTreeClassifications(tree = tree,
+   #                                testDataset = test,
+    #                               predictorField = predictorField,
+     #                              title="Original Dataset. DT C5.0")
   
-  #281019NRT addfed this Function to output the tree as rules to a file
+  # this Function to output the tree as rules to a file
   if (plot==TRUE){
     
     # Get importance of the input fields
@@ -570,8 +544,52 @@ simpleDT<-function(train,test,plot=TRUE){
     print(formattable::formattable(dftreerules))
   }
   
-  return(measures)
+  return(tree)
 } #endof simpleDT()
+
+
+# ************************************************
+# getTreeMetrics() :
+#
+# Generates metrics for a decision tree
+#
+# INPUT   :
+#             Data Frame     - train       - train dataset
+#             Data Frame     - test        - test dataset
+#             boolean        - plot        - TRUE = plot charts
+#
+# OUTPUT
+#         :   Data Frame     - measures  -  the performance metrics of the tree
+#
+# ************************************************
+getTreeMetrics <- function(treeClassifications,
+                           testDataset,
+                           predictorField,
+                           classLabel = 1,
+                           classLabelChar = NULL,
+                           plot = F) {
+  
+  # Get the column index with the class label. Check if the output label is intended to be numeric first
+  if (!is.null(classLabelChar)) {
+    classIndex <- which(colnames(treeClassifications) == classLabelChar)
+  } else {
+    classIndex <- which(as.numeric(colnames(treeClassifications)) == classLabel)
+  }
+  
+  # Get the probabilities for classifying the (positive) outcome
+  predictedProbabilities <- treeClassifications[,classIndex]
+  
+  #test data: vector with just the expected output class
+  expectedResults <- testDataset[,which(colnames(testDataset) == predictorField)]
+  
+  measures<-determineThresholdFromPredictions(predictedProbabilities, expectedResults, plot=plot, title="Hello")
+  # if (plot==TRUE)
+  #  NprintMeasures(results=measures,title=title)
+  
+  return(measures)
+}
+
+
 
 
 
