@@ -1,10 +1,9 @@
 rm(list=ls())
 # Global Environment variables
 # - i.e. available to all functions
-# Good practice to place "constants" in named variables
-# I use UPPERCASE to identify these in my code
+# Constants are definied at the top of the file in capital snake case
 
-DATASET_FILENAME  <- "employee-attrition.csv"          # Name of input dataset file
+DATASET_FILENAME  <- "employee-attrition.csv"   # Name of input dataset file
 OUTPUT_FIELD      <- "AttritionYes"             # Field name of the output class to predict
 ORIGINAL_OUTPUT_FIELD <- "Attrition"            # Field name of the output class in the original dataset
 
@@ -43,6 +42,9 @@ DEEP_REPRODUCABLE <- TRUE # Set to TRUE to test training is same for each run
 # dplyr                  2.0.0
 # C50                    0.1.3.1
 # randomForest           4.6-14
+# keras                  2.3.0.0
+# tensorflow             2.2.0
+# stringr                1.4.0
 MYLIBRARIES<-c("outliers",
                "corrplot",
                "MASS",
