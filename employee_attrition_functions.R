@@ -393,10 +393,4 @@ kFoldModel <- function(dataset,FUN,...){
                        test=separatedData$test)
     
   }
- 
-  
-train_MLP_Model <- function(train, outputField, hiddenNeurons, numEpochs){
-  trainingData <- train[-(which(names(train)==outputField))]
-  expectedOutput <- train[,(which(names(train)==outputField))]
-  }   
 }
