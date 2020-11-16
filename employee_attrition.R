@@ -59,6 +59,8 @@ MYLIBRARIES<-c("outliers",
                "tensorflow",
                "stringr")
 
+gc() # garbage collection to automatically release memory
+
 # clears the console area
 cat("\014")
 
@@ -232,11 +234,15 @@ main<-function(){
   
   # Evaluate and compare the decision trees
   processedDTClassifications <- getTreeClassifications(processedDT, testSet, OUTPUT_FIELD)
-  processedDTMetrics <- getTreeMetrics(processedDTClassifications, testSet, OUTPUT_FIELD)
+  processedDTMetrics <<- getTreeMetrics(processedDTClassifications, testSet, OUTPUT_FIELD)
   
   rawDTClassifications <- getTreeClassifications(rawDT, rawTestSet, ORIGINAL_OUTPUT_FIELD)
-  rawDTMetrics <- getTreeMetrics(rawDTClassifications, rawTestSet, ORIGINAL_OUTPUT_FIELD, classLabelChar = 'Yes')
+  rawDTMetrics <<- getTreeMetrics(rawDTClassifications, rawTestSet, ORIGINAL_OUTPUT_FIELD, classLabelChar = 'Yes')
   
+  processedDTRules <- DecisionTreeRules(processedDT)
+  
+  rawDTRules <- DecisionTreeRules(rawDT)
+
    
   return(test)
 
