@@ -1,5 +1,5 @@
 
-train_MLP_Model <- function(train, outputField, hiddenNeurons, numEpochs, test){
+train_MLP_Model <- function(train, test, outputField, hiddenNeurons, numEpochs){
   
   #Remove the class field from the training data and convert to a matrix as 
   #required by the model.
@@ -22,7 +22,6 @@ train_MLP_Model <- function(train, outputField, hiddenNeurons, numEpochs, test){
     layer_dropout(0.2) %>%
     #As this isn't the first layer, we use the argument passed into the function 'hidden neurons'
     layer_dense(units = hiddenNeurons, activation = "relu") %>%
-    layer_dropout(0.3) %>%
     #Output layer, units must be equal to unique classes, softmax is universally used for classification problems
     #as the activation function.
     layer_dense(units = 2, activation = "softmax")
@@ -48,8 +47,10 @@ train_MLP_Model <- function(train, outputField, hiddenNeurons, numEpochs, test){
       batch_size = 5,
       validation_split = 0.2
     )
+  
+  results <- test_MLP_Model(test,outputField,model_Classifier)
 
-  test_MLP_Model(test,outputField,model_Classifier)
+  return(results)
 
   
 } 

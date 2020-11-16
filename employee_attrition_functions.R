@@ -380,8 +380,8 @@ kFoldTrainingSplit <- function(dataset, fold){
 # OUTPUT : None
 # ************************************************
 
-#NEEDS TO BE FINISHED - NEED TO KNOW MORE ABOUT PLOT AND MEASURE RESULTS FIRST.
-kFoldModel <- function(dataset,FUN,...){
+#Not finish, see comment below.
+kFoldModel <- function(FUN,dataset,outputField,...){
   
   results <- data.frame()
   
@@ -390,7 +390,12 @@ kFoldModel <- function(dataset,FUN,...){
     separatedData<-kFoldTrainingSplit(dataset,i)
     
     modelMeasures<-FUN(train=separatedData$train,
-                       test=separatedData$test)
+                       test=separatedData$test,outputField,...)
+    results <- rbind(results, modelMeasures)
     
   }
+  
+  #Need to return the averages of the rows in results.
+  
+  return(results)
 }
