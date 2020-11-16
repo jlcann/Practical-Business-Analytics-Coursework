@@ -592,19 +592,19 @@ createForest<-function(train,predictorField,forestSize,title = "Importance for R
   #                                  title=myTitle,
   #                                  plot=plot)
   
-  # if (plot==TRUE){
-  #   # Get importance of the input fields
-  #   importance<-randomForest::importance(rf,scale=TRUE,type=1)
-  #   importance<-importance[order(importance,decreasing=TRUE),,drop=FALSE]
+  if (plot==TRUE){
+    # Get importance of the input fields
+    importance<-randomForest::importance(rf,scale=TRUE,type=1)
+    importance<-importance[order(importance,decreasing=TRUE),,drop=FALSE]
 
-  #   colnames(importance)<-"Strength"
+    colnames(importance)<-"Strength"
     
-  #   barplot(t(importance),las=2, border = 0,
-  #           cex.names =0.7,
-  #           main=title)
+    barplot(t(importance),las=2, border = 0,
+            cex.names =0.7,
+            main=title)
     
-  #   print(formattable::formattable(data.frame(importance)))
-  # }
+    print(formattable::formattable(data.frame(importance)))
+  }
   
   return(rf)
 } #endof createForest()

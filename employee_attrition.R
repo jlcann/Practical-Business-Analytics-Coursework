@@ -208,14 +208,15 @@ main<-function(){
   #Create a training Sample Size
   trainingSampleSize <- round(nrow(randomisedDataset))*(HOLDOUT/100)
   
-  #Create the training Set
-  trainingSet <- preprocessedDataset[1:trainingSampleSize,]
-  
-  #Create the test Set
-  testSet <- preprocessedDataset[-(1:trainingSampleSize),]
 
   #Create a stratified data frame ready for stratified k-fold validation
-  stratifiedData <- stratifyDataset(normalisedDataset,OUTPUT_FIELD,K_FOLDS)
+  stratifiedData <- stratifyDataset(preprocessedDataset,OUTPUT_FIELD,K_FOLDS)
+
+  #Create the training Set
+  trainingSet <- stratifiedData[1:trainingSampleSize,]
+  
+  #Create the test Set
+  testSet <- stratifiedData[-(1:trainingSampleSize),]
 
   #Uncomment below to test the MLP model with 70/30 holdout
   #first_model <<- train_MLP_Model(trainingSet,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS,testSet)
@@ -225,7 +226,7 @@ main<-function(){
   #Play around with the Hidden Layer Neurons, Epochs and the number of folds.
   #Model layers can be played with in the model_functions script.
   #Will return a data.frame in the evironment for you to look at.
-  splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
+  #splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
   #Create standard decision trees from raw data and pre-processed data
   processedDT <- createDT(trainingSet, OUTPUT_FIELD, T)
   
@@ -252,7 +253,12 @@ main<-function(){
 
   negativeImp<-getNegativeImportance(processedForest)
   
-  newDatasetForForest = select(preprocessedDataset, -negativeImp)
+  newDatasetForForest = select(stratifiedData, -negativeImp)
+  
+  #ReCreate the training Set
+  trainingSetForest <- newDatasetForForest[1:trainingSampleSize,]
+  
+  reProcessedForest <<- createForest(trainingSetForest,OUTPUT_FIELD,FOREST_SIZE)
   
    
   return(test)
