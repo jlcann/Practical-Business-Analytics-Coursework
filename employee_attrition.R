@@ -16,18 +16,13 @@ DISCREET_BINS     <- 5                    # Number of Discreet Bins Required for
 OUTLIER_CONFIDENCE <- 0.99                # Confidence of discreet 
 CUTOFF            <- 0.90                 # Correlation cutoff
 HOLDOUT           <- 70                   # Holdout percentage for training set
-K_FOLDS           <- 10                   # Number of holds for stratified cross validation
+K_FOLDS           <- 10                    # Number of holds for stratified cross validation
 FREQCUT           <- 99/1                 # To remove zero variance fields
 FOREST_SIZE       <- 1000                 # Number of trees in the forest
 
-NN_HIDDEN_LAYER_NEURONS <- 5 # 10 hidden layer neurons
-NN_EPOCHS <- 100 # Maximum number of training epochs
+NN_HIDDEN_LAYER_NEURONS <- 10 # 10 hidden layer neurons
+NN_EPOCHS <- 50# Maximum number of training epochs
 
-DEEP_HIDDEN_LAYER_NEURONS <- c(5,5) # Number of neurons in each layer
-DEEP_STOPPING <- 2 # Number of times no improvement before stop
-DEEP_TOLERANCE <- 0.01 # Error threshold
-DEEP_ACTIVATION <- "ReLU" # Non-linear activation function
-DEEP_REPRODUCABLE <- TRUE # Set to TRUE to test training is same for each run
 
 
 # Define and then load the libraries used in this project
@@ -71,8 +66,9 @@ pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
 
 #Load additional R script files provide for this lab
 source("employee_attrition_functions.R")
+source("employee-attrition_model_functions.R")
 
-set.seed(123)
+set.seed(321)
 
 
 # ************************************************
@@ -186,6 +182,8 @@ preprocessing <- function(originalDataset){
   # Plot the % importance ordered from lowest to highest
   barplot(t(importance[order(importance$Overall),,drop=FALSE]), las = 2, border = 0, cex.names = 0.8)
   
+  
+  
   return(normalisedDataset)
 }
 # ************************************************
@@ -217,11 +215,17 @@ main<-function(){
   testSet <- preprocessedDataset[-(1:trainingSampleSize),]
 
   #Create a stratified data frame ready for stratified k-fold validation
-  stratifiedData <- stratifyDataset(preprocessedDataset,OUTPUT_FIELD,K_FOLDS)
+  stratifiedData <- stratifyDataset(normalisedDataset,OUTPUT_FIELD,K_FOLDS)
+
+  #Uncomment below to test the MLP model with 70/30 holdout
+  #first_model <<- train_MLP_Model(trainingSet,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS,testSet)
   
-  #Test object to see if the kFoldTrainingSplit function is working as intended
-  test <- kFoldTrainingSplit(stratifiedData,3)
   
+  #Returns the dataframe containing the results of each split at the moment, as the averages have not been calculated.
+  #Play around with the Hidden Layer Neurons, Epochs and the number of folds.
+  #Model layers can be played with in the model_functions script.
+  #Will return a data.frame in the evironment for you to look at.
+  splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
   #Create standard decision trees from raw data and pre-processed data
   processedDT <- createDT(trainingSet, OUTPUT_FIELD, T)
   
@@ -252,6 +256,8 @@ main<-function(){
   
    
   return(test)
+
+
 
 }
 
