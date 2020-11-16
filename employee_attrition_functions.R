@@ -542,6 +542,30 @@ createDT <- function(train, predictorField, title = "Importance for Decision Tre
 } #endof createDT()
 
 # ************************************************
+# getNegativeImportance() :
+#
+# Create Random Forest on pre-processed dataset
+#
+# INPUT   :
+#         :   Data Frame     - train       - train dataset
+#             Data Frame     - test        - test dataset
+#             boolean        - plot        - TRUE = output charts/results
+#
+# OUTPUT  :
+#         :   Data Frame     - measures  - performance metrics
+#
+# ************************************************
+getNegativeImportance <- function(tree) {
+
+  negImp <-as.data.frame(importance(tree))
+  negImp <-negImp[which(negImp$MeanDecreaseAccuracy < 0), ]
+   
+
+  return(rownames(negImp))
+}
+
+
+# ************************************************
 # createForest() :
 #
 # Create Random Forest on pre-processed dataset
@@ -564,7 +588,7 @@ createForest<-function(train,predictorField,forestSize,title = "Importance for R
   
   #does it need factor(expected)
   rf<-randomForest::randomForest(inputs,
-                                 output,
+                                 factor(output),
                                  ntree=forestSize,
                                  importance=TRUE,
                                  mtry=sqrt(ncol(inputs)))
@@ -578,19 +602,19 @@ createForest<-function(train,predictorField,forestSize,title = "Importance for R
   #                                  title=myTitle,
   #                                  plot=plot)
   
-  if (plot==TRUE){
-    # Get importance of the input fields
-    importance<-randomForest::importance(rf,scale=TRUE,type=1)
-    importance<-importance[order(importance,decreasing=TRUE),,drop=FALSE]
+  # if (plot==TRUE){
+  #   # Get importance of the input fields
+  #   importance<-randomForest::importance(rf,scale=TRUE,type=1)
+  #   importance<-importance[order(importance,decreasing=TRUE),,drop=FALSE]
+
+  #   colnames(importance)<-"Strength"
     
-    colnames(importance)<-"Strength"
+  #   barplot(t(importance),las=2, border = 0,
+  #           cex.names =0.7,
+  #           main=title)
     
-    barplot(t(importance),las=2, border = 0,
-            cex.names =0.7,
-            main=title)
-    
-    print(formattable::formattable(data.frame(importance)))
-  }
+  #   print(formattable::formattable(data.frame(importance)))
+  # }
   
   return(rf)
 } #endof createForest()
