@@ -395,7 +395,13 @@ kFoldModel <- function(FUN,dataset,outputField,...){
     
   }
   
+  resultMeans<-colMeans(results)
+  resultMeans[1:4]<-as.integer(resultMeans[1:4])
+  
+  
+  
+  
   #Need to return the averages of the rows in results.
   
-  return(results)
+  return(as.list(resultMeans))
 }

@@ -16,11 +16,11 @@ DISCREET_BINS     <- 5                    # Number of Discreet Bins Required for
 OUTLIER_CONFIDENCE <- 0.99                # Confidence of discreet 
 CUTOFF            <- 0.90                 # Correlation cutoff
 HOLDOUT           <- 70                   # Holdout percentage for training set
-K_FOLDS           <- 8                    # Number of holds for stratified cross validation
+K_FOLDS           <- 10                    # Number of holds for stratified cross validation
 FREQCUT           <- 99/1                 # To remove zero variance fields
 
 NN_HIDDEN_LAYER_NEURONS <- 10 # 10 hidden layer neurons
-NN_EPOCHS <- 100# Maximum number of training epochs
+NN_EPOCHS <- 50# Maximum number of training epochs
 
 
 
@@ -220,7 +220,7 @@ main<-function(){
   #Play around with the Hidden Layer Neurons, Epochs and the number of folds.
   #Model layers can be played with in the model_functions script.
   #Will return a data.frame in the evironment for you to look at.
-  splitModel <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
+  splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
 
 
 
