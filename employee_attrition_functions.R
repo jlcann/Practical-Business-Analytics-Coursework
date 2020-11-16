@@ -253,23 +253,25 @@ areaUnderCurve <- function(score, bool) {
 #        FP        - double - False Positive records
 #        TN        - double - True Negative records
 #        FN        - double - False Negative records
+#        TH        - double - Clasifier threshold measure
 #        accuracy  - double - accuracy measure
-#        attrYes   - double - precision for "Yes" (values are 1) measure
-#        attrNo    - double - precision for "No" (values are 1) measure
+#        p1        - double - precision for classifying 1 (values are 1) measure
+#        p0        - double - precision for classifying 0 (values are 0) measure
 #        FPR       - double - FPR measure
 #        TPR       - double - FPR measure
 #        TNR       - double - TNR measure
 #        MCC       - double - Matthew's Correlation Coeficient
 # ************************************************
-calculateMeasures<-function(TP,FN,FP,TN){
+calculateMeasures<-function(TP,FN,FP,TN,TH){
   
   retList<-list(  "TP"=TP,
                   "FN"=FN,
                   "TN"=TN,
                   "FP"=FP,
+                  "TH"=TH,
                   "accuracy"=100.0*((TP+TN)/(TP+FP+FN+TN)),
-                  "attrNo"=  100.0*(TP/(TP+FP)),
-                  "attrYes"= 100.0*(TN/(FN+TN)),
+                  "p1"=      100.0*(TP/(TP+FP)),
+                  "p0"=      100.0*(TN/(FN+TN)),
                   "FPR"=     100.0*(FP/(FP+TN)),
                   "TPR"=     100.0*(TP/(TP+FN)),
                   "TNR"=     100.0*(TN/(FP+TN)),
@@ -280,7 +282,7 @@ calculateMeasures<-function(TP,FN,FP,TN){
 
 
 # ************************************************
-# calculateConfusion() :
+# calculate Confusion() :
 #
 # Calculate a confusion matrix for 2-class classifier - Yes/1 and No/0
 # INPUT: vector - expectedClass  - {0,1}, Expected outcome from each row (labels)
@@ -288,8 +290,7 @@ calculateMeasures<-function(TP,FN,FP,TN){
 #
 # OUTPUT: A list with the  entries from calculateMeasures()
 # ************************************************
-# calculateConfusion<-function(expectedClass,predictedClass,threshold){
-calculateConfusion<-function(expectedClass,predictedClass){
+calculateConfusion<-function(expectedClass,predictedClass,threshold){
   
   #Assign the resulting table into our 'confusion'variable 
   
@@ -301,10 +302,9 @@ calculateConfusion<-function(expectedClass,predictedClass){
   FN<-as.double(confusion[1,2])
   FP<-as.double(confusion[2,1])
   TN<-as.double(confusion[1,1])
-  # TH<-as.double(threshold)
+  TH<-as.double(threshold)
   
-  # return(calculateMeasures(TP,FN,FP,TN,TH))
-  return(calculateMeasures(TP,FN,FP,TN)) 
+  return(calculateMeasures(TP,FN,FP,TN,TH))
   
 } #endof calculateConfusion()
 
@@ -315,20 +315,21 @@ calculateConfusion<-function(expectedClass,predictedClass){
 # Use dataset to generate predictions from model
 # Evaluate as classifier using threshold value
 #
-# INPUT   :   vector double     - probs        - probability of being class 1
-#             Data Frame        - testing_data - Dataset to evaluate
+# INPUT   :   vector double     - predicted        - probability of being class 1
+#             Data Frame        - expected - Dataset to evaluate
 #             double            - threshold     -cutoff (probability) for classification
 #
 # OUTPUT  :   List       - Named evaluation measures
-#                        - Predicted class probability
+#                       
 #
 # ************************************************
 calculateTreeMetrics<-function(predicted,expected,threshold) {
   
   predictedClass<-ifelse(predicted<threshold,0,1)
  
-  results<-calculateConfusion(expectedClass=expected,
-                              predictedClass=predicted)
+  results<-calculateConfusion(expectedClass = expected,
+                              predictedClass = predictedClass,
+                              threshold = threshold)
   
   return(results)
 } #endof calculate TreeMetrics()
@@ -420,11 +421,6 @@ plotThresholdGraph <- function(toPlot,
   text(x=specificityROC, y=sensitivityROC, adj = c(-0.2,1.2),cex=1, col="red",annotate)
   
 } # endof plot ThresholdGraph()
-
-
-
-
-
 
 # ************************************************
 # calculate Threshold() :
@@ -521,7 +517,7 @@ calculateThreshold<-function(predicted,
 #         :   Data Frame     - measures    -  the performance metrics of the tree
 #
 # ************************************************
-createDT <- function(train, predictorField, plot = F) {
+createDT <- function(train, predictorField, title = "Importance for Decision Tree",plot = F) {
   # Need to produce a data frame from the predictor fields and a vector for the output
   outputClassIndex <- which(names(train) == predictorField)
   inputs <- train[-outputClassIndex]
@@ -539,11 +535,65 @@ createDT <- function(train, predictorField, plot = F) {
     # Plot the importance fields
     barplot(t(importance),las=2,
             border = 0, cex.names =0.7,
-            main="Basic C5.0")    
+            main=title)    
   }
   
   return(tree)
 } #endof createDT()
+
+# ************************************************
+# createForest() :
+#
+# Create Random Forest on pre-processed dataset
+#
+# INPUT   :
+#         :   Data Frame     - train       - train dataset
+#             Data Frame     - test        - test dataset
+#             boolean        - plot        - TRUE = output charts/results
+#
+# OUTPUT  :
+#         :   Data Frame     - measures  - performance metrics
+#
+# ************************************************
+createForest<-function(train,predictorField,forestSize,title = "Importance for Random Forest",plot=TRUE){
+  
+  # Need to produce a data frame from the predictor fields and a vector for the output
+  outputClassIndex <- which(names(train) == predictorField)
+  inputs <- train[-outputClassIndex]
+  output <- train[, outputClassIndex]
+  
+  #does it need factor(expected)
+  rf<-randomForest::randomForest(inputs,
+                                 output,
+                                 ntree=forestSize,
+                                 importance=TRUE,
+                                 mtry=sqrt(ncol(inputs)))
+  
+  
+  # ************************************************
+  # # Use the created decision tree with the test dataset
+  # measures<-getTreeClassifications(tree = rf,
+  #                                  testDataset = 
+  #                                  predictorField = predictorField,
+  #                                  title=myTitle,
+  #                                  plot=plot)
+  
+  if (plot==TRUE){
+    # Get importance of the input fields
+    importance<-randomForest::importance(rf,scale=TRUE,type=1)
+    importance<-importance[order(importance,decreasing=TRUE),,drop=FALSE]
+    
+    colnames(importance)<-"Strength"
+    
+    barplot(t(importance),las=2, border = 0,
+            cex.names =0.7,
+            main=title)
+    
+    print(formattable::formattable(data.frame(importance)))
+  }
+  
+  return(rf)
+} #endof createForest()
 
 # ************************************************
 # getTreeMetrics() :
@@ -589,11 +639,11 @@ getTreeMetrics <- function(treeClassifications, testDataset, predictorField, cla
   }
   
   # TODO: Calculate the threshold, then produce the other metrics and return the dataframe to metrics
-  # threshold <- calculateThreshold(predictedProbabilities, expectedResults)
-  # metrics <- calculateTreeMetrics(predictedProbabilities, expectedResults, threshold)
-  # return(metrics)
-    measures <- calculateThreshold(predictedProbabilities, expectedResults, title="")
-    return(measures)
+  threshold <- calculateThreshold(predictedProbabilities, expectedResults)
+  metrics <- calculateTreeMetrics(predictedProbabilities, expectedResults, threshold)
+  return(metrics)
+    # measures <- calculateThreshold(predictedProbabilities, expectedResults, title="")
+    # return(measures)
 }
 
 

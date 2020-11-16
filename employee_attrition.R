@@ -18,6 +18,7 @@ CUTOFF            <- 0.90                 # Correlation cutoff
 HOLDOUT           <- 70                   # Holdout percentage for training set
 K_FOLDS           <- 10                   # Number of holds for stratified cross validation
 FREQCUT           <- 99/1                 # To remove zero variance fields
+FOREST_SIZE       <- 1000                 # Number of trees in the forest
 
 NN_HIDDEN_LAYER_NEURONS <- 5 # 10 hidden layer neurons
 NN_EPOCHS <- 100 # Maximum number of training epochs
@@ -242,6 +243,8 @@ main<-function(){
   processedDTRules <- DecisionTreeRules(processedDT)
   
   rawDTRules <- DecisionTreeRules(rawDT)
+
+  processedForest <- createForest(trainingSet,OUTPUT_FIELD,FOREST_SIZE)
 
    
   return(test)
