@@ -24,17 +24,18 @@ train_MLP_Model <- function(train, test, outputField, hiddenNeurons, numEpochs){
     layer_dense(units = hiddenNeurons, activation = "relu") %>%
     #Output layer, units must be equal to unique classes, softmax is universally used for classification problems
     #as the activation function.
+    layer_dropout(0.2) %>%
     layer_dense(units = 2, activation = "softmax")
   
   #Print model summary
   summary(model_Classifier)
 
   
-  #Must now add a loss function and an optimiser to the model
+  #Must now add a loss function and an optimizer to the model
   model_Classifier %>%
     compile(
       loss = "categorical_crossentropy",
-      optimizer = "adagrad",
+      optimizer = "adam",
       metrics = "accuracy"
     )
   
