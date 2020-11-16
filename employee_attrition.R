@@ -244,8 +244,12 @@ main<-function(){
   
   rawDTRules <- DecisionTreeRules(rawDT)
 
-  processedForest <- createForest(trainingSet,OUTPUT_FIELD,FOREST_SIZE)
+  processedForest <<- createForest(trainingSet,OUTPUT_FIELD,FOREST_SIZE)
 
+  negativeImp<-getNegativeImportance(processedForest)
+  
+  newDatasetForForest = select(preprocessedDataset, -negativeImp)
+  
    
   return(test)
 
