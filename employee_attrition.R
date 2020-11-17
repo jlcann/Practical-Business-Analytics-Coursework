@@ -5,7 +5,9 @@ rm(list=ls())
 # I use UPPERCASE to identify these in my code
 
 DATASET_FILENAME  <- "employee-attrition.csv"          # Name of input dataset file
+
 OUTPUT_FIELD      <- "AttritionYes"             # Field name of the output class to predict
+
 
 TYPE_DISCREET     <- "DISCREET"           # field is discreet (numeric)
 TYPE_ORDINAL      <- "ORDINAL"            # field is continuous numeric
@@ -18,9 +20,9 @@ CUTOFF            <- 0.90                 # Correlation cutoff
 HOLDOUT           <- 70                   # Holdout percentage for training set
 K_FOLDS           <- 10                    # Number of holds for stratified cross validation
 FREQCUT           <- 99/1                 # To remove zero variance fields
-
 NN_HIDDEN_LAYER_NEURONS <- 10 # 10 hidden layer neurons
 NN_EPOCHS <- 50# Maximum number of training epochs
+
 
 
 
@@ -37,6 +39,7 @@ NN_EPOCHS <- 50# Maximum number of training epochs
 # dplyr                  2.0.0
 # C50                    0.1.3.1
 # randomForest           4.6-14
+
 MYLIBRARIES<-c("outliers",
                "corrplot",
                "MASS",
@@ -60,6 +63,7 @@ pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
 
 #Load additional R script files provide for this lab
 source("employee_attrition_functions.R")
+
 source("employee-attrition_model_functions.R")
 
 set.seed(321)
@@ -76,12 +80,13 @@ set.seed(321)
 preprocessing <- function(originalDataset){
   
   print(DATASET_FILENAME)
-  
+
   #Print statistics of originalDataSet into the viewer.
   basicStatistics(originalDataset)
   
   # Check for NA fields in original dataset
-  print("Checking to see for any missing data:")
+
+
   print(sapply(originalDataset,function(x) sum(is.na(x))))
   
   # Determine if fields are SYMBOLIC or NUMERIC (global)
@@ -176,8 +181,6 @@ preprocessing <- function(originalDataset){
   # Plot the % importance ordered from lowest to highest
   barplot(t(importance[order(importance$Overall),,drop=FALSE]), las = 2, border = 0, cex.names = 0.8)
   
-  
-  
   return(normalisedDataset)
 }
 # ************************************************
@@ -222,8 +225,5 @@ main<-function(){
   #Will return a data.frame in the evironment for you to look at.
   splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
 
-
-
 }
-
 main()

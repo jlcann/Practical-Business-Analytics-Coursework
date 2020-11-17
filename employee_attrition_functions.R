@@ -104,6 +104,7 @@ FieldTypes<-function(dataset){
   return(field_types)
 }
 
+
 # ****************
 # oneHotEncoding() :
 #   Pre-processing method to convert appropriate 
@@ -148,6 +149,7 @@ normalise <- function(values) {
 
 
 
+
 # ************************************************
 # NPREPROCESSING_discreetNumeric() :
 #
@@ -171,7 +173,9 @@ NPREPROCESSING_discreetNumeric<-function(dataset,field_types,cutoff){
     if (field_types[field]==TYPE_NUMERIC) {
       
       #Scale the whole field (column) to between 0 and 1
+
       scaled_column<-normalise(dataset[,field])
+
       
       #Generate the "cutoff" points for each of 10 bins
       #so we will get 0-0.1, 0.1-0.2...0.9-1.0
@@ -200,10 +204,12 @@ NPREPROCESSING_discreetNumeric<-function(dataset,field_types,cutoff){
         field_types[field]<-TYPE_ORDINAL
       
       barplot(bins, main=paste(graphTitle,field_types[field]),
+
                        xlab=names(dataset[field]),
                        names.arg = 1:10,bty="n")
       #Bar chart helps visulisation. Type of field is the chart name
         
+
       
     } #endif numeric types
   } #endof for
