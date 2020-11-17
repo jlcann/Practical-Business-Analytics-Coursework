@@ -21,8 +21,8 @@ K_FOLDS           <- 10                    # Number of holds for stratified cros
 FREQCUT           <- 99/1                 # To remove zero variance fields
 FOREST_SIZE       <- 1000                 # Number of trees in the forest
 
-NN_HIDDEN_LAYER_NEURONS <- 10 # 10 hidden layer neurons
-NN_EPOCHS <- 50# Maximum number of training epochs
+NN_HIDDEN_LAYER_NEURONS <- 2 # 10 hidden layer neurons
+NN_EPOCHS <- 1# Maximum number of training epochs
 
 
 
@@ -73,7 +73,7 @@ source("employee_attrition_functions.R")
 
 source("employee-attrition_model_functions.R")
 
-set.seed(321)
+set.seed(123)
 
 
 # ************************************************
@@ -233,28 +233,28 @@ main<-function(){
   #Play around with the Hidden Layer Neurons, Epochs and the number of folds.
   #Model layers can be played with in the model_functions script.
   #Will return a data.frame in the evironment for you to look at.
-  splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
+  #splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
   #Create standard decision trees from raw data and pre-processed data
-  processedDT <- createDT(trainingSet, OUTPUT_FIELD, T)
+    processedDT <- createDT(trainingSet, testSet, OUTPUT_FIELD, T)
+    
+    kfoldTree <<- kFoldModel(createDT, stratifiedData, OUTPUT_FIELD, plot=T)
+    #kfoldTree <<- kFoldModel(createForest, stratifiedData, OUTPUT_FIELD, forestSize = FOREST_SIZE, plot=T)
   
-  randomisedRawDataset <- originalDataset[sample(nrow(originalDataset)),]
+   randomisedRawDataset <- originalDataset[sample(nrow(originalDataset)),]
   
-  # The decision tree cannot be made if there are fields where each record has the same value, take these out
-  randomisedRawDatasetWithoutConstantFields = select(randomisedRawDataset, -c("Over18", "EmployeeCount"))
-  rawTrainingSet <- randomisedRawDatasetWithoutConstantFields[1:trainingSampleSize,]
-  rawTestSet <- randomisedRawDatasetWithoutConstantFields[-(1:trainingSampleSize),]
-  rawDT <- createDT(rawTrainingSet, ORIGINAL_OUTPUT_FIELD)
+  # # The decision tree cannot be made if there are fields where each record has the same value, take these out
+   
+   # randomisedRawDatasetWithoutConstantFields = select(randomisedRawDataset, -c("Over18", "EmployeeCount"))
+   # rawTrainingSet <- randomisedRawDatasetWithoutConstantFields[1:trainingSampleSize,]
+   # rawTestSet <- randomisedRawDatasetWithoutConstantFields[-(1:trainingSampleSize),]
+   # rawDT <- createDT(rawTrainingSet, rawTestSet, ORIGINAL_OUTPUT_FIELD)
+
   
-  # Evaluate and compare the decision trees
-  processedDTClassifications <- getTreeClassifications(processedDT, testSet, OUTPUT_FIELD)
-  processedDTMetrics <<- getTreeMetrics(processedDTClassifications, testSet, OUTPUT_FIELD)
-  
-  rawDTClassifications <- getTreeClassifications(rawDT, rawTestSet, ORIGINAL_OUTPUT_FIELD)
-  rawDTMetrics <<- getTreeMetrics(rawDTClassifications, rawTestSet, ORIGINAL_OUTPUT_FIELD, classLabelChar = 'Yes')
-  
-  # Print the rules for the trees
-  processedDTRules <<- getTreeRules(processedDT, T)
-  rawDTRules <<- getTreeRules(rawDT, T)
+  # # Print the rules for the trees
+   #kfoldTreeRules <<- getTreeRules(kfoldTree, T)
+   # rawDTRules <<- getTreeRules(rawDT, T)
+
+   
 
   #processedForest <- createForest(trainingSet,OUTPUT_FIELD,FOREST_SIZE)
 
