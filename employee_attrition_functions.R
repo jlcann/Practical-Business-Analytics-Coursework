@@ -185,8 +185,8 @@ getTreeRules<-function(tree, print = F){
   }
   
   # Use more descriptive column names and drop undesired columns
-  colnames(rules) <- c("Rule Number", "Rule", "Classification", "Support", "Occurences in Dataset")
-  rules <- rules[, 1:5]
+  colnames(rules) <- c("Rule Number", "Rule", "Classification", "Occurences in Dataset")
+  rules <- rules[, 1:4]
   
   if (print) {
     print(formattable::formattable(rules))
