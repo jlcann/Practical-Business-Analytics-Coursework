@@ -258,12 +258,12 @@ main<-function(){
 
   #negativeImp<-getNegativeImportance(processedForest)
   
-  newDatasetForForest = select(stratifiedData, -negativeImp)
+  #newDatasetForForest = select(stratifiedData, -negativeImp)
   
   #ReCreate the training Set
-  trainingSetForest <- newDatasetForForest[1:trainingSampleSize,]
+  #trainingSetForest <- newDatasetForForest[1:trainingSampleSize,]
   
-  reProcessedForest <<- createForest(trainingSetForest,OUTPUT_FIELD,FOREST_SIZE)
+  #reProcessedForest <<- createForest(trainingSetForest,OUTPUT_FIELD,FOREST_SIZE)
   
    
   return("test")
