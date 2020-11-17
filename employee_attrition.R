@@ -41,6 +41,7 @@ NN_EPOCHS <- 50# Maximum number of training epochs
 # keras                  2.3.0.0
 # tensorflow             2.2.0
 # stringr                1.4.0
+# tidyrules              0.1.5
 MYLIBRARIES<-c("outliers",
                "corrplot",
                "MASS",
@@ -53,7 +54,8 @@ MYLIBRARIES<-c("outliers",
                "randomForest",
                "keras",
                "tensorflow",
-               "stringr")
+               "stringr",
+               "tidyrules")
 
 gc() # garbage collection to automatically release memory
 
@@ -215,7 +217,7 @@ main<-function(){
   testSet <- preprocessedDataset[-(1:trainingSampleSize),]
 
   #Create a stratified data frame ready for stratified k-fold validation
-  stratifiedData <- stratifyDataset(normalisedDataset,OUTPUT_FIELD,K_FOLDS)
+  stratifiedData <- stratifyDataset(preprocessedDataset,OUTPUT_FIELD,K_FOLDS)
 
   #Uncomment below to test the MLP model with 70/30 holdout
   #first_model <<- train_MLP_Model(trainingSet,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS,testSet)
@@ -244,18 +246,18 @@ main<-function(){
   rawDTClassifications <- getTreeClassifications(rawDT, rawTestSet, ORIGINAL_OUTPUT_FIELD)
   rawDTMetrics <<- getTreeMetrics(rawDTClassifications, rawTestSet, ORIGINAL_OUTPUT_FIELD, classLabelChar = 'Yes')
   
-  processedDTRules <- DecisionTreeRules(processedDT)
-  
-  rawDTRules <- DecisionTreeRules(rawDT)
+  # Print the rules for the trees
+  processedDTRules <<- getTreeRules(processedDT, T)
+  rawDTRules <<- getTreeRules(rawDT, T)
 
-  processedForest <<- createForest(trainingSet,OUTPUT_FIELD,FOREST_SIZE)
+  #processedForest <- createForest(trainingSet,OUTPUT_FIELD,FOREST_SIZE)
 
-  negativeImp<-getNegativeImportance(processedForest)
+  #negativeImp<-getNegativeImportance(processedForest)
   
-  newDatasetForForest = select(preprocessedDataset, -negativeImp)
+  #newDatasetForForest = select(preprocessedDataset, -negativeImp)
   
    
-  return(test)
+  return("test")
 
 
 

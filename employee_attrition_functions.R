@@ -62,22 +62,10 @@ basicStatistics<-function(dataset,...){
 }
 
 
-
-# ************************************************
-# NPREPROCESSING_setInitialFieldType() :
-#
-# Set  each field for NUMERIC or SYNBOLIC
-#
-# INPUT:
-#        String - name - name of the field to manually set
-#        String - type - manual type
-#
-# OUTPUT : None
-# ************************************************
 # ************************************************
 # FieldTypes() :
 #
-# Test each field for NUMERIC or SYNBOLIC
+# Test each field for NUMERIC or SYMBOLIC
 #
 # INPUT: Data Frame - dataset - data
 #
@@ -110,7 +98,7 @@ FieldTypes<-function(dataset){
 #   categorical fields into binary representation
 #
 # INPUT       :   dataframe - dataset           - dataset to one hot encode
-#                 vector    - fieldsForEncoding -  
+#                 vector    - fieldsForEncoding - fields to be one hot encoded
 #
 # OUTPUT      :   Encoded fields
 # ****************
@@ -173,52 +161,38 @@ getTreeClassifications <- function(tree, testDataset, predictorField){
 } #endof getTreeClassifications()
 
 # ************************************************
-# DECISION TREE CONVERT DT RULES TO ASCII FORMATTED RULES
+# getTreeRules()
 #
-# <anticedent 1> AND <anticedent 2> ...
-# Each anticedent is: [field][comparision][value]
+# REQUIRES tidyrules
 #
-# INPUT: Object - tree - Trained tree
+# INPUT: 
+#      :Object  - tree  - trained decision tree
+#      :boolean - print - If true, prints the rules out to the viewer
 #
-# OUTPUT: data frame of rules, class and anticedents
+# OUTPUT:
+#       :  data frame   -  rules   - the rules for the decision tree
 # ************************************************
-DecisionTreeRules<-function(tree){
-  #library(stringr) already imported in the main script file
-  x<-summary(tree)[1]
-  x<-substr(x,regexpr("Rules:",x)[1]+8,nchar(x))
-  x<-substr(x,1,regexpr("Evaluation on training data",x)[1]-1)
-  x<-gsub("[\n\t]", "*", x)
-  dataFrameWithRules<-data.frame(matrix(ncol=3,nrow=tree$size),stringsAsFactors = FALSE)
-  dataFrameWithRules<-setNames(dataFrameWithRules,c("Rule","Class","Anti"))
+getTreeRules<-function(tree, print = F){
+  #library(tidyrules) is already imported in the main script file
   
-  numberofrules<-tree$size
-  
-  if (length(numberofrules)>1){
-    numberofrules<-numberofrules[1]
-    warning("More than one tree have been found. Extracting and displaying rules for just the first one")
+  # extract rules into a data frame using tidyRules
+  rules <- as.data.frame(tidyRules(tree))
+  for (i in 1:nrow(rules)) {
+    rules[i, 2] <- str_replace_all(rules[i, 2], "%in%", "is")
+    rules[i, 2] <- gsub("c(", "", rules[i, 2], fixed = T)
+    rules[i, 2] <- gsub(")", "", rules[i, 2], fixed = T)
+    rules[i, 2] <- str_replace_all(rules[i, 2], ",", " OR")
   }
   
-  totalAnticedents<-0
-  for (ruleNumber in 1:numberofrules){
-    start<-regexpr("\\*\\*",x)[1]+2
-    end<-regexpr("->",x)[1]-3
-    onerule<-substr(x,start,end) #Single rule, anticedents seperated by '**'
-    onerule<-gsub("\\*\\*"," AND ",onerule) #Rule now has "AND" between anticedents
-    #onerule<-convertNormalisedDTRuleToRealWorld(onerule)
-    NumAnticedents<-str_count(onerule,"AND")+1
-    totalAnticedents=totalAnticedents+NumAnticedents
-    classpos<-regexpr("class ",x)+6
-    classID<-as.numeric(substr(x,classpos,classpos))  #This has the class of the rule, i.e. {0,1}
-    dataFrameWithRules$Rule[ruleNumber]<-onerule
-    dataFrameWithRules$Class[ruleNumber]<-ifelse(classID==0,"LEAVE","STAY") # Convert class to label
-    dataFrameWithRules$Anti[ruleNumber]<-NumAnticedents
-    x<-substr(x,classpos,nchar(x))
-    st<-regexpr("\\*\\*",x)[1]+2 #move past the rule ID
-    x<-substr(x,st,nchar(x))
-  }
-  print(formattable::formattable(dataFrameWithRules))
-  return(dataFrameWithRules)
+  # Use more descriptive column names and drop undesired columns
+  colnames(rules) <- c("Rule Number", "Rule", "Classification", "Support", "Occurences in Dataset")
+  rules <- rules[, 1:5]
   
+  if (print) {
+    print(formattable::formattable(rules))
+  }
+  
+  return(rules)
 }
 
 # ************************************************
@@ -255,8 +229,8 @@ areaUnderCurve <- function(score, bool) {
 #        FN        - double - False Negative records
 #        TH        - double - Clasifier threshold measure
 #        accuracy  - double - accuracy measure
-#        p1        - double - precision for classifying 1 (values are 1) measure
-#        p0        - double - precision for classifying 0 (values are 0) measure
+#        p1        - double - precision for classifying 1 (values are 1)
+#        p0        - double - precision for classifying 0 (values are 0)
 #        FPR       - double - FPR measure
 #        TPR       - double - FPR measure
 #        TNR       - double - TNR measure
@@ -310,34 +284,32 @@ calculateConfusion<-function(expectedClass,predictedClass,threshold){
 
 
 # ************************************************
-# calculate TreeMetrics() :
+# calculateTreeMetrics() :
 #
 # Use dataset to generate predictions from model
 # Evaluate as classifier using threshold value
 #
-# INPUT   :   vector double     - predicted        - probability of being class 1
-#             Data Frame        - expected - Dataset to evaluate
-#             double            - threshold     -cutoff (probability) for classification
+# INPUT   :   vector double     - predicted     - probability of being class 1
+#             Data Frame        - expected      - Dataset to evaluate
+#             double            - threshold     - cutoff (probability) for classification
 #
 # OUTPUT  :   List       - Named evaluation measures
 #                       
 #
 # ************************************************
-calculateTreeMetrics<-function(predicted,expected,threshold) {
+calculateTreeMetrics <- function(predicted,expected,threshold) {
   
-  predictedClass<-ifelse(predicted<threshold,0,1)
+  predictedClass <- ifelse(predicted < threshold, 0, 1)
  
-  results<-calculateConfusion(expectedClass = expected,
-                              predictedClass = predictedClass,
-                              threshold = threshold)
+  results<-calculateConfusion(expectedClass = expected, predictedClass = predictedClass, threshold = threshold)
   
   return(results)
-} #endof calculate TreeMetrics()
+} #endof calculateTreeMetrics()
 
 # ************************************************
 #  plotThresholdGraph() :
 #
-# Use data generated by calculate Threshold() to plot threshold graph
+# Use data generated by calculateThreshold() to plot threshold graph
 #
 # INPUT       :   data frame  - toPlot
 #             :   double      - maxYoudan
@@ -504,13 +476,13 @@ calculateThreshold<-function(predicted,
 #             boolean        - plot                  - if true, also plots tree rules
 #
 # OUTPUT
-#         :   Data Frame     - measures    -  the performance metrics of the tree
+#         :   object     - tree    -  a new trained decision tree
 #
 # ************************************************
-createDT <- function(train, predictorField, title = "Importance for Decision Tree",plot = F) {
+createDT <- function(train, predictorField, title = "Importance for Decision Tree", plot = F) {
   # Need to produce a data frame from the predictor fields and a vector for the output
   outputClassIndex <- which(names(train) == predictorField)
-  inputs <- train[-outputClassIndex]
+  inputs <- train[, -outputClassIndex]
   output <- train[, outputClassIndex]
   
   tree<-C50::C5.0(x=inputs, y=factor(output), rules=T, trials=1)
