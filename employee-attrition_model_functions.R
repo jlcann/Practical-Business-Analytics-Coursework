@@ -1,4 +1,19 @@
-
+# ************************************************
+# train_MLP_Model()
+#
+# This function trains a multilayer perceptron Model on the desired Dataset
+# It's output list is the result of multiple other functions evaluating the model
+# and processing its results.
+#
+# INPUT : train - data.frame - Train Dataset
+#         test - data.frame - Test Dataset
+#         outputField - String - Name of predicted field
+#         hiddenNeurons - Integer - Number of neurons for hidden layer
+#         numEpochs - Integer - Number of trainin cycles
+#
+# OUTPUT : results - List - A list containing the accuracy measurements of the model.
+#
+# ************************************************
 train_MLP_Model <- function(train, test, outputField, hiddenNeurons, numEpochs){
   
   #Remove the class field from the training data and convert to a matrix as 
@@ -8,7 +23,7 @@ train_MLP_Model <- function(train, test, outputField, hiddenNeurons, numEpochs){
   
   #Create a list containing the expected outputs for the classifier 
   #and convert them to categorical, also required by the model.
-  expectedOutput <<- to_categorical(train[,(which(names(train)==outputField))])
+  expectedOutput <- to_categorical(train[,(which(names(train)==outputField))])
 
   
   #Create the model classifier, ready for layers and parameters to be added.
@@ -49,19 +64,41 @@ train_MLP_Model <- function(train, test, outputField, hiddenNeurons, numEpochs){
       validation_split = 0.2
     )
   
+  #Assign the results of the model tested on the test dataset.
   results <- test_MLP_Model(test,outputField,model_Classifier)
 
+  #return the stats of the tested model.
   return(results)
 
   
 } 
 
+# ************************************************
+# test_MLP_Model()
+#
+# This function tests the model created and trained in the train_MLP__Model() function.
+# 
+#
+# INPUT : testData - Data.Frame - Testing Dataset
+#         outputField - String - Name of the field to be predicted
+#         mlp_Model - keras_model_sequential object - The model trained on the train dataset
+#
+# OUTPUT : results - List - A list containing the accuracy measurements of the model.
+#
+# ************************************************
 
 test_MLP_Model<-function(testData,outputField,mlp_model){
-
+  
+  
+  #Remove the class field from the training data and convert to a matrix as 
+  #required by the model.
   test <- as.matrix(testData[-(which(names(testData)==outputField))])
+  
+  #Create a vector containing the classes for each of the test rows which we expect the model to predict.
   expectedTestOutput <- testData[,(which(names(testData)==outputField))]
   
+  #Test the model on the testset matrix and assign the results to a variable.
+  #returns a two field matrix containing the confidence of each class.
   testPredicted<-predict(mlp_model,test)
   
   #Return the results model with the best threshold determined.
@@ -72,34 +109,86 @@ test_MLP_Model<-function(testData,outputField,mlp_model){
   
 }
 
+# ************************************************
+# determineThreshold()
+#
+# Determine the best threshold in the range [0,1] for calculating a confusion matrix.
+# Best threshold is determined based on the smallest Euclidean Distance.
+#
+# INPUT : testPredicted - Vector - Predicted class from the tested model
+#         ExpectedTestOutput - Vector -  The expected class for each of the predicted values
+#
+# OUTPUT : results - List - A list containing the accuracy measurements of the model.
+#
+# ************************************************
 
 #NEED TO FINISH THIS FUNCTION
 determineThreshold<-function(testPredicted, expectedTestOutput){
-  
+
+  #Create a new dataframe to hold the results of the accuracy calculations with each
+  #of the different thresholds tested.
   thresholds<- data.frame()
   
+  #Iterate from 0 up to 1 in intervals of 0.01, testing each value as a potential threshold.
   for (threshold in seq(0,1,by=0.01)){
+    #Assign the results of the confusion matrix calculated though evaluateModel() into a variable.
     result<-evaluateModel(testPredicted, expectedTestOutput,threshold)
+    #Bind the result variable to a new row in the threshold dataframe.
     thresholds<-rbind(thresholds, data.frame(x=threshold,fpr=result$FPR,tpr=result$TPR))
   }
   
+  #Calculate the euclidean distance of each of the results binded onto the threshold dataframe.
   thresholds$distance<-sqrt(((100-thresholds$tpr)^2)+((thresholds$fpr)^2))
+  #Return the row which contains the minimum euclidean distance.
   minDistance <- thresholds$x[which.min(thresholds$distance)]
-  print(minDistance)
+
+  #Return the evaluated model with the optimal threshold.
   return(evaluateModel(testPredicted, expectedTestOutput, minDistance))
 }
 
+# ************************************************
+# evaluateModel()
+#
+# Determine the best threshold in the range [0,1] for calculating a confusion matrix.
+# Best threshold is determined based on the smallest Euclidean Distance.
+#
+# INPUT : testPredicted - Vector - Predicted class from the tested model
+#         ExpectedTestOutput - Vector -  The expected class for each of the predicted values
+#
+# OUTPUT : results - List - A list containing the accuracy measurements of the model.
+#
+# ************************************************
+
 evaluateModel<-function(testPredicted,expectedTestOutput,threshold){
   
+  #For each of the predicted classes in the testPredicted vector, if the value is
+  #smaller than the threshold, class = 0, otherwise class = 1.
   class<-ifelse(testPredicted<threshold,0,1)
   
+  #Calculate a confusionMatrix using calculateConfusionMatrix() using the classes determined 
+  # in the line above, and the expected classes.
   results<-calculateConfusionMatrix(expectedTestOutput,class)
   
+  #Return the list containing the accuracy measurements of the confusion matrix.
   return(results)
 }
 
+# ************************************************
+# calculateConfusionMatrix()
+#
+# Calculate a confusion matrix using the expected classes and the classes determined by the model.
+# return a list which contains the confusion matrix values as well as other accuracy measurements.
+#
+# INPUT : class - Vector - Predicted class from the tested model
+#         expectedTestOutput - Vector -  The expected class for each of the predicted values
+#
+# OUTPUT : results - List - A list containing the accuracy measurements of the model.
+#
+# ************************************************
+
 calculateConfusionMatrix<-function(expectedTestOutput,class){
   
+  #Create a tab
   confusion<-table(factor(class,levels=0:1),factor(expectedTestOutput,levels=0:1))
   
   TP<-as.double(confusion[2,2])

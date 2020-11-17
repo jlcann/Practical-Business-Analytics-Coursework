@@ -213,7 +213,7 @@ main<-function(){
   stratifiedData <- stratifyDataset(normalisedDataset,OUTPUT_FIELD,K_FOLDS)
 
   #Uncomment below to test the MLP model with 70/30 holdout
-  #first_model <<- train_MLP_Model(trainingSet,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS,testSet)
+  #first_model <<- train_MLP_Model(trainingSet,testSet,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
   
   
   #Returns the dataframe containing the results of each split at the moment, as the averages have not been calculated.
