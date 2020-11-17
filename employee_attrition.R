@@ -7,6 +7,7 @@ DATASET_FILENAME  <- "employee-attrition.csv"   # Name of input dataset file
 OUTPUT_FIELD      <- "AttritionYes"             # Field name of the output class to predict
 ORIGINAL_OUTPUT_FIELD <- "Attrition"            # Field name of the output class in the original dataset
 
+
 TYPE_DISCREET     <- "DISCREET"           # field is discreet (numeric)
 TYPE_ORDINAL      <- "ORDINAL"            # field is continuous numeric
 TYPE_SYMBOLIC     <- "SYMBOLIC"           # field is a string
@@ -22,6 +23,7 @@ FOREST_SIZE       <- 1000                 # Number of trees in the forest
 
 NN_HIDDEN_LAYER_NEURONS <- 10 # 10 hidden layer neurons
 NN_EPOCHS <- 50# Maximum number of training epochs
+
 
 
 
@@ -68,6 +70,7 @@ pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
 
 #Load additional R script files provide for this lab
 source("employee_attrition_functions.R")
+
 source("employee-attrition_model_functions.R")
 
 set.seed(321)
@@ -84,12 +87,13 @@ set.seed(321)
 preprocessing <- function(originalDataset){
   
   print(DATASET_FILENAME)
-  
+
   #Print statistics of originalDataSet into the viewer.
   basicStatistics(originalDataset)
   
   # Check for NA fields in original dataset
-  print("Checking to see for any missing data:")
+
+
   print(sapply(originalDataset,function(x) sum(is.na(x))))
   
   # Determine if fields are SYMBOLIC or NUMERIC (global)
@@ -184,8 +188,6 @@ preprocessing <- function(originalDataset){
   # Plot the % importance ordered from lowest to highest
   barplot(t(importance[order(importance$Overall),,drop=FALSE]), las = 2, border = 0, cex.names = 0.8)
   
-  
-  
   return(normalisedDataset)
 }
 # ************************************************
@@ -224,7 +226,7 @@ main<-function(){
   stratifiedData <- stratifyDataset(preprocessedDataset,OUTPUT_FIELD,K_FOLDS)
 
   #Uncomment below to test the MLP model with 70/30 holdout
-  #first_model <<- train_MLP_Model(trainingSet,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS,testSet)
+  #first_model <<- train_MLP_Model(trainingSet,testSet,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
   
   
   #Returns the dataframe containing the results of each split at the moment, as the averages have not been calculated.
@@ -265,11 +267,6 @@ main<-function(){
   
   #reProcessedForest <<- createForest(trainingSetForest,OUTPUT_FIELD,FOREST_SIZE)
   
-   
-  return("test")
-
-
 
 }
-
 main()

@@ -92,6 +92,7 @@ FieldTypes<-function(dataset){
   return(field_types)
 }
 
+
 # ****************
 # oneHotEncoding() :
 #   Pre-processing method to convert appropriate 
@@ -133,6 +134,7 @@ oneHotEncoding<-function(dataset,fieldsForEncoding){
 normalise <- function(values) {
   return ((values - min(values)) / (max(values) - min(values)))
 }
+
 
 
 
@@ -653,7 +655,9 @@ NPREPROCESSING_discreetNumeric<-function(dataset,field_types,cutoff){
     if (field_types[field]==TYPE_NUMERIC) {
       
       #Scale the whole field (column) to between 0 and 1
+
       scaled_column<-normalise(dataset[,field])
+
       
       #Generate the "cutoff" points for each of 10 bins
       #so we will get 0-0.1, 0.1-0.2...0.9-1.0
