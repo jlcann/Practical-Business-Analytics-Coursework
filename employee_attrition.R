@@ -5,7 +5,9 @@ rm(list=ls())
 # I use UPPERCASE to identify these in my code
 
 DATASET_FILENAME  <- "employee-attrition.csv"          # Name of input dataset file
-OUTPUT_FIELD      <- "Attrition"             # Field name of the output class to predict
+
+OUTPUT_FIELD      <- "AttritionYes"             # Field name of the output class to predict
+
 
 TYPE_DISCREET     <- "DISCREET"           # field is discreet (numeric)
 TYPE_ORDINAL      <- "ORDINAL"            # field is continuous numeric
@@ -15,7 +17,11 @@ TYPE_IGNORE       <- "IGNORE"             # field is not encoded
 DISCREET_BINS     <- 5                    # Number of Discreet Bins Required for 
 OUTLIER_CONFIDENCE <- 0.99                # Confidence of discreet 
 CUTOFF            <- 0.90                 # Correlation cutoff
+HOLDOUT           <- 70                   # Holdout percentage for training set
+K_FOLDS           <- 10                    # Number of holds for stratified cross validation
 FREQCUT           <- 99/1                 # To remove zero variance fields
+NN_HIDDEN_LAYER_NEURONS <- 10 # 10 hidden layer neurons
+NN_EPOCHS <- 50# Maximum number of training epochs
 
 
 
@@ -25,11 +31,15 @@ FREQCUT           <- 99/1                 # To remove zero variance fields
 # pacman	               0.5.1
 # outliers	             0.14
 # corrplot	             0.84
-# MASS	                 7.3.53
+# MASS	                 7.3-51.6
 # formattable 	         0.2.0.1
 # stats                  4.0.3
 # PerformanceAnalytics   2.0.4
-# Carat         
+# Carat                  6.0-86
+# dplyr                  2.0.0
+# C50                    0.1.3.1
+# randomForest           4.6-14
+
 MYLIBRARIES<-c("outliers",
                "corrplot",
                "MASS",
@@ -37,7 +47,12 @@ MYLIBRARIES<-c("outliers",
                "stats",
                "PerformanceAnalytics",
                "caret",
-               "dplyr")
+               "dplyr",
+               "C50",
+               "randomForest",
+               "keras",
+               "tensorflow")
+
 
 # clears the console area
 cat("\014")
@@ -49,82 +64,29 @@ pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
 #Load additional R script files provide for this lab
 source("employee_attrition_functions.R")
 
-set.seed(123)
+source("employee-attrition_model_functions.R")
 
-# originalDataSet <- readDataset(DATASET_FILENAME)
-originalDataset <- read.csv("employee-attrition.csv")
-
-# ****************
-# oneHotEncoding() :
-#   Pre-processing method to convert appropriate 
-#   categorical fields into binary representation
-#
-# INPUT       :   dataframe - dataset           - dataset to one hot encode
-#                 vector    - fieldsForEncoding -  
-#
-# OUTPUT      :   Encoded fields
-# ****************
-oneHotEncoding<-function(dataset,fieldsForEncoding){
-  # Combine input fields for encoding
-  stringToFormulate <- substring(paste(" + ", fieldsForEncoding, sep = "", collapse = ""), 4)
-  
-  OHEFormula <- as.formula(paste("~",stringToFormulate))
-  
-  # One hot encode fields listed in function
-  dmy <- dummyVars(OHEFormula, data = dataset)
-  trsf<- data.frame(predict(dmy, newdata = originalDataset[,which(field_types==TYPE_SYMBOLIC)]))
-  
-  # Combine the encoded fields back to the originalDataset
-  encodedDataset <- cbind(originalDataset[,which(field_types==TYPE_SYMBOLIC)],trsf)
-  
-  # Remove original fields that have been hot encoded
-  newData<- encodedDataset %>% select(-c(fieldsForEncoding))
-  # Return new dataset
-  return(newData)
-}
+set.seed(321)
 
 
 # ************************************************
-# normalise() :
-#   Normalise fields between 1 and 0
+# preprocessing() :
+# data preprocessing function
 #
-# INPUT       :   Fields to normalise
+# INPUT       :   dataframe - originalDataset - the original dataset 
 #
-# OUTPUT      :   Normalised fields between 1 and 0
+# OUTPUT      :   dataframe - normalisedDataset - dataset set to be used for the ML models
 # ************************************************
-normalise <- function(values) {
-  return ((values - min(values)) / (max(values) - min(values)))
-}
-
-print("Leaving main")
-# ************************************************
-# main() :
-# main entry point to execute analytics
-#
-# INPUT       :   None
-#
-# OUTPUT      :   None
-#
-# Keeps all objects as local to this function
-# ************************************************
-main<-function(){
-  print("Inside main function")
+preprocessing <- function(originalDataset){
   
   print(DATASET_FILENAME)
-  
-  #Load the dataset into a variable named originalDataSet.
-  
-  
-  #Do you have unexpected field names or data? There are some complexities when loading text from different systems,
-  #e.g. Windows PC or Mac, where characters are “encoded” differently. You may want to search google on “UTF-8” if you
-  #have compatibility issues. To solve this, load the CSV file into Excel and then “Save as…”, selecting the FILE FORMAT to
-  #save as “MS-DOS Comma Seperated”. Spare a moment to think about what issues you might face with much larger datasets,
-  #collected on different IT systems, maybe in different counties and what might be involved to get this data into a format that you
-  #can use for ML.
+
   #Print statistics of originalDataSet into the viewer.
   basicStatistics(originalDataset)
   
   # Check for NA fields in original dataset
+
+
   print(sapply(originalDataset,function(x) sum(is.na(x))))
   
   # Determine if fields are SYMBOLIC or NUMERIC (global)
@@ -174,9 +136,6 @@ main<-function(){
     print("All Fields Are Numeric")
   }
   
-  # Make sure there are no NA's
-  any(is.na(dataBeforeNormalisation))
-  
   # remove fields that have zero variance
   toRemove <- nearZeroVar(dataBeforeNormalisation, freqCut = FREQCUT) 
   removedCols <- colnames(dataBeforeNormalisation)[toRemove]
@@ -210,9 +169,10 @@ main<-function(){
   
   # OPTIONAL Show importance
   # uses caret library
-  print(summary(logisticModelTransformAllInputs))
+  #print(summary(logisticModelTransformAllInputs))
   
   # Analyze the table of deviance
+  print("Printing Deviance Analysis:")
   print(anova(logisticModelTransformAllInputs))
   
   # Use caret library to determine scaled "importance"
@@ -221,6 +181,49 @@ main<-function(){
   # Plot the % importance ordered from lowest to highest
   barplot(t(importance[order(importance$Overall),,drop=FALSE]), las = 2, border = 0, cex.names = 0.8)
   
-} #endof main()
+  return(normalisedDataset)
+}
+# ************************************************
+# main() :
+# main entry point to execute analytics
+#
+# INPUT       :   None
+#
+# OUTPUT      :   None
+#
+# Keeps all objects as local to this function
+# ************************************************
+main<-function(){
+  print("Inside main function")
+  
+  originalDataset <- read.csv(DATASET_FILENAME, encoding = "UTF-8", stringsAsFactors = FALSE)
+  
+  normalisedDataset <<- preprocessing(originalDataset)
+  
+  #Randomised the normalised dataset row wise, ready for splitting into test and training split.
+  randomisedDataset <- normalisedDataset[sample(nrow(normalisedDataset)),]
+  
+  #Create a training Sample Size
+  trainingSampleSize <- round(nrow(randomisedDataset))*(HOLDOUT/100)
+  
+  #Create the training Set
+  trainingSet <- normalisedDataset[1:trainingSampleSize,]
+  
+  #Create the test Set
+  testSet <- normalisedDataset[-(1:trainingSampleSize),]
 
+  #Create a stratified data frame ready for stratified k-fold validation
+  stratifiedData <- stratifyDataset(normalisedDataset,OUTPUT_FIELD,K_FOLDS)
+
+  #Uncomment below to test the MLP model with 70/30 holdout
+  #first_model <<- train_MLP_Model(trainingSet,testSet,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
+  
+  
+  #Returns the dataframe containing the results of each split at the moment, as the averages have not been calculated.
+  #Play around with the Hidden Layer Neurons, Epochs and the number of folds.
+  #Model layers can be played with in the model_functions script.
+  #Will return a data.frame in the evironment for you to look at.
+  splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
+
+}
 main()
