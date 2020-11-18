@@ -130,8 +130,8 @@ test_MLP_Model<-function(testData,outputField,mlp_model){
 # ************************************************
 calculateThreshold<-function(predicted,
                              expected,
-                             plot=TRUE,
-                             title=""){
+                             title="",
+                             plot=TRUE){
   toPlot<-data.frame()
   
   
@@ -614,7 +614,7 @@ getTreeMetrics <- function(treeClassifications, testDataset, predictorField, cla
   }
   
   
-  metrics <- calculateThreshold(predictedProbabilities, expectedResults)
+  metrics <- calculateThreshold(predictedProbabilities, expectedResults,"Tree Model")
   
   return(metrics)
 }
