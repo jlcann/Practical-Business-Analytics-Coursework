@@ -210,8 +210,6 @@ evaluateModel<-function(testPredicted,expectedTestOutput,threshold){
   return(results)
 }
 
-
-
 # ************************************************
 # calculate Confusion() :
 #
@@ -280,6 +278,59 @@ NcalcMeasures<-function(TP,FN,FP,TN,TH){
   return(retList)
 }
 
+# ************************************************
+# plotConfusionMatrix() :
+#
+# Plot the confusion matrix as well as accuracy details 
+# INPUT: vector - measures  - Measures with the confusion matrix details
+#        vector - title     - title of the confusion matrix
+#
+# OUTPUT: A plotted confusion matrix as well as the accuracy details
+# ************************************************
+plotConfusionMatrix <- function(measures, title) {
+  
+  layout(matrix(c(1,1,2)))
+  par(mar=c(2,2,2,2))
+  plot(c(100, 345), c(300, 450), type = "n", xlab="", ylab="", xaxt='n', yaxt='n')
+  title(title, cex.main=2)
+  
+  # create the matrix 
+  rect(150, 430, 240, 370, col='Green')
+  text(195, 435, 'Stays', cex=1.2)
+  rect(250, 430, 340, 370, col='Red')
+  text(295, 435, 'Leaves', cex=1.2)
+  text(125, 370, 'Predicted', cex=1.3, srt=90, font=2)
+  text(245, 450, 'Actual', cex=1.3, font=2)
+  rect(150, 305, 240, 365, col='Red')
+  rect(250, 305, 340, 365, col='Green')
+  text(140, 400, 'Stays', cex=1.2, srt=90)
+  text(140, 335, 'Leaves', cex=1.2, srt=90)
+  
+  # Confusion Matrix Details
+  text(195, 400, measures$TP, cex=1.6, font=2, col='white')
+  text(195, 335, measures$FN, cex=1.6, font=2, col='white')
+  text(295, 400, measures$FP, cex=1.6, font=2, col='white')
+  text(295, 335, measures$TN, cex=1.6, font=2, col='white')
+  
+
+  plot(c(100, 0), c(100, 0), type = "n", xlab="", ylab="", main = "Model Details", xaxt='n', yaxt='n')
+  text(10, 85, "Accuracy", cex=1.2, font=2)
+  text(10, 70, round(as.numeric(measures$accuracy), 3), cex=1.2)
+  text(30, 85, "TPR", cex=1.2, font=2)
+  text(30, 70, round(as.numeric(measures$TPR), 3), cex=1.2)
+  text(50, 85, "FPR", cex=1.2, font=2)
+  text(50, 70, round(as.numeric(measures$FPR), 3), cex=1.2)
+  text(70, 85, "TNR", cex=1.2, font=2)
+  text(70, 70, round(as.numeric(measures$TNR), 3), cex=1.2)
+  text(90, 85, "Threshold", cex=1.2, font=2)
+  text(90, 70, round(as.numeric(measures$Theshold), 3), cex=1.2)
+  
+  # Details for the correctly and wrongly predicted results
+  text(30, 35, "Correctly Predicted", cex=1.5, font=2)
+  text(30, 20, measures$TP + measures$TN, cex=1.4)
+  text(70, 35, "Wrongly Predicted", cex=1.5, font=2)
+  text(70, 20, measures$FN + measures$FP, cex=1.4)
+}  
 
 # ************************************************
 # getTreeClassifications() :

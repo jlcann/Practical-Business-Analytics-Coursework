@@ -388,9 +388,11 @@ kFoldModel <- function(FUN,dataset,outputField,...){
   resultMeans<-colMeans(results)
   resultMeans[1:4]<-as.integer(resultMeans[1:4])
   
-  
-  
-  
+  if(deparse(substitute(FUN)) == "train_MLP_Model"){
+    plotConfusionMatrix(as.list(resultMeans), "MLP Model Confusion Matrix")
+  } else {
+    plotConfusionMatrix(as.list(resultMeans), "Decision Trees Confusion Matrix")
+  }
   #Need to return the averages of the rows in results.
   
   return(as.list(resultMeans))
