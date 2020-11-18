@@ -380,8 +380,8 @@ kFoldTrainingSplit <- function(dataset, fold){
 # OUTPUT : None
 # ************************************************
 
-#NEEDS TO BE FINISHED - NEED TO KNOW MORE ABOUT PLOT AND MEASURE RESULTS FIRST.
-kFoldModel <- function(dataset,FUN,...){
+#Not finish, see comment below.
+kFoldModel <- function(FUN,dataset,outputField,...){
   
   results <- data.frame()
   
@@ -390,13 +390,44 @@ kFoldModel <- function(dataset,FUN,...){
     separatedData<-kFoldTrainingSplit(dataset,i)
     
     modelMeasures<-FUN(train=separatedData$train,
-                       test=separatedData$test)
+                       test=separatedData$test,outputField,...)
+    results <- rbind(results, modelMeasures)
     
   }
- 
   
-train_MLP_Model <- function(train, outputField, hiddenNeurons, numEpochs){
-  trainingData <- train[-(which(names(train)==outputField))]
-  expectedOutput <- train[,(which(names(train)==outputField))]
-  }   
+  resultMeans<-colMeans(results)
+  resultMeans[1:4]<-as.integer(resultMeans[1:4])
+  
+  
+  
+  
+  #Need to return the averages of the rows in results.
+  
+  return(as.list(resultMeans))
 }
+
+# ************************************************
+# NplotConfusion()
+#
+# Plot confusion matrix
+#
+# INPUT:    list - results - results from NcalcConfusion()
+#
+# OUTPUT :  NONE
+#
+# 070819NRT Plots confusion matrix
+# ************************************************
+NplotConfusion<-function(results){
+  
+  aa<-matrix(c(round(results$TP,digits=0),
+               round(results$FN,digits=0),
+               round(results$FP,digits=0),
+               round(results$TN,digits=0)),
+             nrow=2)
+  row.names(aa)<-c("Emplyee Stays","Employee Leaves")
+  colnames(aa)<-c("Employee Stays","Employee Leaves")
+  fourfoldplot(aa,color=c("#cc6666","#99cc99"),
+               conf.level=0,
+               margin=2,
+               main="TP  FP / FN   TN")
+} #endof NplotConfusion()

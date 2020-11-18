@@ -16,11 +16,11 @@ DISCREET_BINS     <- 5                    # Number of Discreet Bins Required for
 OUTLIER_CONFIDENCE <- 0.99                # Confidence of discreet 
 CUTOFF            <- 0.90                 # Correlation cutoff
 HOLDOUT           <- 70                   # Holdout percentage for training set
-K_FOLDS           <- 10                   # Number of holds for stratified cross validation
+K_FOLDS           <- 10                    # Number of holds for stratified cross validation
 FREQCUT           <- 99/1                 # To remove zero variance fields
 
-NN_HIDDEN_LAYER_NEURONS <- 5 # 10 hidden layer neurons
-NN_EPOCHS <- 100 # Maximum number of training epochs
+NN_HIDDEN_LAYER_NEURONS <- 10 # 10 hidden layer neurons
+NN_EPOCHS <- 50 # Maximum number of training epochs
 
 
 
@@ -50,8 +50,7 @@ MYLIBRARIES<-c("outliers",
                "keras",
                "tensorflow")
 
-source(file.choose("employee_attrition_functions.R"))
-source(file.choose("employee-attrition_model_functions.R"))
+
 # clears the console area
 cat("\014")
 
@@ -61,8 +60,9 @@ pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
 
 #Load additional R script files provide for this lab
 source("employee_attrition_functions.R")
+source("employee-attrition_model_functions.R")
 
-set.seed(123)
+set.seed(321)
 
 
 # ************************************************
@@ -211,13 +211,20 @@ main<-function(){
 
   #Create a stratified data frame ready for stratified k-fold validation
   stratifiedData <- stratifyDataset(normalisedDataset,OUTPUT_FIELD,K_FOLDS)
+
+  #Uncomment below to test the MLP model with 70/30 holdout
+  #first_model <<- train_MLP_Model(trainingSet,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS,testSet)
   
-  #Test object to see if the kFoldTrainingSplit function is working as intended
-  test <- kFoldTrainingSplit(stratifiedData,3)
   
-  test2 <- train_MLP_Model(normalisedDataset,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
+  #Returns the dataframe containing the results of each split at the moment, as the averages have not been calculated.
+  #Play around with the Hidden Layer Neurons, Epochs and the number of folds.
+  #Model layers can be played with in the model_functions script.
+  #Will return a data.frame in the evironment for you to look at.
+  splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,NN_HIDDEN_LAYER_NEURONS,NN_EPOCHS)
   
-  return(test2)
+  NplotConfusion(splitModelMeans)
+
+
 
 }
 
