@@ -14,7 +14,7 @@
 # OUTPUT : results - List - A list containing the accuracy measurements of the model.
 #
 # ************************************************
-train_MLP_Model <- function(train, test, outputField, hiddenNeurons, numEpochs){
+train_MLP_Model <- function(train, test, outputField, plotConf = FALSE){
   
 
   #Remove the class field from the training data and convert to a matrix as 
@@ -33,14 +33,10 @@ train_MLP_Model <- function(train, test, outputField, hiddenNeurons, numEpochs){
   #Create and add layers to the model. Must used keras pipeline operator '%>%'
   model_Classifier %>%
     #First layer must have input dimensions of the dataset, so number of columns
-    layer_dense(input_shape = ncol(trainingData), units = ncol(trainingData), activation = "relu") %>%
+    layer_dense(input_shape = ncol(trainingData), units = NN_HIDDEN_RELU, activation = "relu") %>%
     #Dropout layer, this helps to prevent over-fitting the model.
-    layer_dropout(0.2) %>%
-    #As this isn't the first layer, we use the argument passed into the function 'hidden neurons'
-    layer_dense(units = hiddenNeurons, activation = "relu") %>%
-    #Output layer, units must be equal to unique classes, softmax is universally used for classification problems
-    #as the activation function.
-    layer_dropout(0.2) %>%
+    layer_dropout(NN_DROPOUT) %>%
+    layer_dense(units = NN_HIDDEN_SIGMOID, activation = "sigmoid") %>%
     layer_dense(units = 2, activation = "softmax")
   
   #Print model summary
@@ -50,8 +46,8 @@ train_MLP_Model <- function(train, test, outputField, hiddenNeurons, numEpochs){
   #Must now add a loss function and an optimizer to the model
   model_Classifier %>%
     compile(
-      loss = "categorical_crossentropy",
-      optimizer = "adam",
+      loss = "binary_crossentropy",
+      optimizer = NN_OPTIMISER,
       metrics = "accuracy"
     )
   
@@ -60,14 +56,17 @@ train_MLP_Model <- function(train, test, outputField, hiddenNeurons, numEpochs){
     fit(
       x = trainingData,
       y = expectedOutput,
-      epochs = numEpochs,
-      batch_size = 5,
+      epochs = NN_EPOCHS,
+      batch_size = NN_BATCH_SIZE,
       validation_split = 0.2
     )
   
   #Assign the results of the model tested on the test dataset.
   results <- test_MLP_Model(test,outputField,model_Classifier)
 
+  if (plotConf==TRUE)
+    plotConfusionMatrix(results, "MLP Model Confusion Matrix")
+  
   #return the stats of the tested model.
   return(results)
 
