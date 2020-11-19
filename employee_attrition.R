@@ -20,12 +20,12 @@ HOLDOUT           <- 70                   # Holdout percentage for training set
 FREQCUT           <- 99/1                 # To remove zero variance fields
 FOREST_SIZE       <- 1000                 # Number of trees in the forest
 
-NN_BATCH_SIZE <<- 30
-NN_OPTIMISER <<- "adam"
-NN_DROPOUT <<- 0.1
-NN_HIDDEN_RELU <<- 16
-NN_HIDDEN_SIGMOID <<- 1
-NN_EPOCHS <<- 100# Maximum number of training epochs
+NN_BATCH_SIZE <- 30
+NN_OPTIMISER <- "adam"
+NN_DROPOUT <- 0.1
+NN_HIDDEN_RELU <- 16
+NN_HIDDEN_SIGMOID <- 1
+NN_EPOCHS <- 100# Maximum number of training epochs
 
 K_FOLDS        <- 20 # Number of holds for stratified cross validation
 
@@ -185,6 +185,14 @@ preprocessing <- function(originalDataset){
   # Use caret library to determine scaled "importance"
   importance<-as.data.frame(caret::varImp(logisticModelTransformAllInputs, scale = TRUE))
   
+  
+  leastImportance <- rownames(importance %>% filter(Overall < 0.1))
+  
+  print(leastImportance)
+  
+  normalisedDataset <- select(normalisedDataset, -leastImportance)
+
+  
   # Plot the % importance ordered from lowest to highest
   barplot(t(importance[order(importance$Overall),,drop=FALSE]), las = 2, border = 0, cex.names = 0.8)
   
@@ -214,10 +222,9 @@ main<-function(){
 
   #Create a stratified data frame ready for stratified k-fold validation
   stratifiedData <- stratifyDataset(preprocessedDataset,OUTPUT_FIELD,K_FOLDS)
-
-
-
-  first_model <<- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD,plotConf = T)
+  
+    
+  #first_model <<- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD,plotConf = T)
   
   
   
@@ -262,9 +269,6 @@ main<-function(){
   #trainingSetForest <- newDatasetForForest[1:trainingSampleSize,]
   
   #reProcessedForest <<- createForest(trainingSetForest,OUTPUT_FIELD,FOREST_SIZE)
-  
-
-  
   
 }
 main()
