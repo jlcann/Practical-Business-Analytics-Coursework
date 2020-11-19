@@ -62,22 +62,10 @@ basicStatistics<-function(dataset,...){
 }
 
 
-
-# ************************************************
-# NPREPROCESSING_setInitialFieldType() :
-#
-# Set  each field for NUMERIC or SYNBOLIC
-#
-# INPUT:
-#        String - name - name of the field to manually set
-#        String - type - manual type
-#
-# OUTPUT : None
-# ************************************************
 # ************************************************
 # FieldTypes() :
 #
-# Test each field for NUMERIC or SYNBOLIC
+# Test each field for NUMERIC or SYMBOLIC
 #
 # INPUT: Data Frame - dataset - data
 #
@@ -111,7 +99,7 @@ FieldTypes<-function(dataset){
 #   categorical fields into binary representation
 #
 # INPUT       :   dataframe - dataset           - dataset to one hot encode
-#                 vector    - fieldsForEncoding -  
+#                 vector    - fieldsForEncoding - fields to be one hot encoded
 #
 # OUTPUT      :   Encoded fields
 # ****************
@@ -146,8 +134,6 @@ oneHotEncoding<-function(dataset,fieldsForEncoding){
 normalise <- function(values) {
   return ((values - min(values)) / (max(values) - min(values)))
 }
-
-
 
 
 # ************************************************
@@ -204,12 +190,10 @@ NPREPROCESSING_discreetNumeric<-function(dataset,field_types,cutoff){
         field_types[field]<-TYPE_ORDINAL
       
       barplot(bins, main=paste(graphTitle,field_types[field]),
-
-                       xlab=names(dataset[field]),
-                       names.arg = 1:10,bty="n")
+              xlab=names(dataset[field]),
+              names.arg = 1:10,bty="n")
       #Bar chart helps visulisation. Type of field is the chart name
-        
-
+      
       
     } #endif numeric types
   } #endof for
@@ -309,7 +293,7 @@ NplotOutliers<-function(sorted,outliers,fieldName){
 
 
 stratifyDataset <- function(dataset, output, folds){
-
+  
   #Create a variable containing all the unique classes in the column of our output variable 
   uniqueClasses <- unique(dataset[,output])
   
@@ -341,7 +325,7 @@ stratifyDataset <- function(dataset, output, folds){
   
   #Returns the combined and randomised data frame.
   return(stratifiedData)
-
+  
 } 
 
 # ************************************************
@@ -366,8 +350,9 @@ kFoldTrainingSplit <- function(dataset, fold){
   #Create a data.frame contraining the rest of the rows, with FoldIds != fold.
   trainingSet <- subset(dataset, subset = foldIds!=fold)
   
-  #Merge the two data.frames into a single list, ready to be returned.
-  separatedData <- list(test=testSet, train=trainingSet)
+  #Merge the two data.frames  into a single list, ready to be returned.
+  #Remove the foldIds field from each of them to not skew the models. 
+  separatedData <- list(test=subset(testSet, select = -foldIds), train = subset(trainingSet, select = -foldIds))
   
   #Return the separated data in list form ready for modelling. 
   return(separatedData)
@@ -404,10 +389,36 @@ kFoldModel <- function(FUN,dataset,outputField,...){
   resultMeans<-colMeans(results)
   resultMeans[1:4]<-as.integer(resultMeans[1:4])
   
-  
-  
-  
+  if(deparse(substitute(FUN)) == "train_MLP_Model"){
+    plotConfusionMatrix(as.list(resultMeans), "MLP Model Confusion Matrix")
+  } else {
+    plotConfusionMatrix(as.list(resultMeans), "Decision Trees Confusion Matrix")
+  }
   #Need to return the averages of the rows in results.
   
   return(as.list(resultMeans))
+}
+
+
+
+discretiseFields <-function(dataset, fields){
+  
+  for (i in fields){
+    dataset[,i] <-as.numeric(bin(dataset[,i], nbins=10, labels=c(1:10), method = "content"))
+  }
+  
+  return(dataset)
+  
+}
+
+createHoldoutDataset <-function(dataset, holdout){
+  trainingSampleSize <- round(nrow(dataset))*(HOLDOUT/100)
+  
+  #Create the training Set
+  trainingSet <- dataset[1:trainingSampleSize,]
+  
+  #Create the test Set
+  testSet <- dataset[-(1:trainingSampleSize),]
+  
+  return(list(training = trainingSet, test = testSet))
 }
