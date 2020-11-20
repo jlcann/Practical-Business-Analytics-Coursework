@@ -105,7 +105,7 @@ preprocessing <- function(originalDataset){
   
   # Determine if NUMERIC fields are DISCREET or ORDINAL
   field_Types_Discreet_Ordinal<- NPREPROCESSING_discreetNumeric(originalDataset,field_types,DISCREET_BINS)
-  discreet_fields <- names(originalDataset)[field_Types_Discreet_Ordinal=="DISCREET"]
+  discreet_fields <<- names(originalDataset)[field_Types_Discreet_Ordinal=="DISCREET"]
   
   results<-data.frame(field=names(originalDataset),initial=field_types,types1=field_Types_Discreet_Ordinal)
   print(formattable::formattable(results))
@@ -120,7 +120,7 @@ preprocessing <- function(originalDataset){
                            "MonthlyRate")
   
   # Create Bins and complete dataset before normalisation
-  ordinalBinsDataset <<- discretiseFields(ordinals, fields_for_discreet)
+  ordinalBinsDataset <- discretiseFields(ordinals, fields_for_discreet)
   
   # Test if any ordinals are outliers and replace with mean values
   #ordinalsDataset <- NPREPROCESSING_outlier(ordinals = ordinalBinsDataset, OUTLIER_CONFIDENCE)

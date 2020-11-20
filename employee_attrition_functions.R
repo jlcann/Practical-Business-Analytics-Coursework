@@ -150,7 +150,7 @@ normalise <- function(values) {
 # Uses histogram
 # Plots histogram for visulisation
 # ************************************************
-NPREPROCESSING_discreetNumeric<-function(dataset,field_types,cutoff){
+NPREPROCESSING_discreetNumeric<-function(dataset,field_types,bins_cutoff){
   
   #For every field in our dataset
   for(field in 1:(ncol(dataset))){
@@ -163,7 +163,7 @@ NPREPROCESSING_discreetNumeric<-function(dataset,field_types,cutoff){
       scaled_column<-normalise(dataset[,field])
 
       
-      #Generate the "cutoff" points for each of 10 bins
+      #Generate the "bins_cutoff" points for each of 10 bins
       #so we will get 0-0.1, 0.1-0.2...0.9-1.0
       cutpoints<-seq(0,1,length=11)
       
@@ -179,21 +179,14 @@ NPREPROCESSING_discreetNumeric<-function(dataset,field_types,cutoff){
       # the 10 bins will have a % value of the count (i.e. density)
       bins<-(bins/length(scaled_column))*100.0
       
-      graphTitle<-"AUTO:"
-      
-      #If the number of bins with less than 1% of the values is greater than the cutoff
+      #If the number of bins with less than 1% of the values is greater than the bins_cutoff
       #then the field is deterimed to be a discreet value
       
-      if (length(which(bins<1.0))>cutoff)
+      if (length(which(bins<1.0))>bins_cutoff)
         field_types[field]<-TYPE_DISCREET
       else
         field_types[field]<-TYPE_ORDINAL
-      
-      barplot(bins, main=paste(graphTitle,field_types[field]),
-              xlab=names(dataset[field]),
-              names.arg = 1:10,bty="n")
-      #Bar chart helps visulisation. Type of field is the chart name
-      
+
       
     } #endif numeric types
   } #endof for
@@ -404,7 +397,7 @@ kFoldModel <- function(FUN,dataset,outputField,...){
 discretiseFields <-function(dataset, fields){
   
   for (i in fields){
-    dataset[,i] <-as.numeric(bin(dataset[,i], nbins=10, labels=c(1:10), method = "content"))
+    dataset[,i] <-as.numeric(bin(dataset[,i], nbins=10, labels=c(1:10), method = "length"))
   }
   
   return(dataset)
