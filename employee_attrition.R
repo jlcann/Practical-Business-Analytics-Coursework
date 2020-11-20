@@ -61,7 +61,12 @@ MYLIBRARIES<-c("outliers",
                "tensorflow",
                "stringr",
                "tidyrules",
-               "OneR")
+               "OneR",
+               "ggplot2",
+               "ggpubr",
+               "GGally",
+               "hrbrthemes",
+               "hexbin")
 
 gc() # garbage collection to automatically release memory
 
@@ -73,131 +78,14 @@ library(pacman)
 pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
 
 #Load additional R script files provide for this lab
-source("employee_attrition_functions.R")
-
 source("employee-attrition_model_functions.R")
+source("employee_attrition_exploration.R")
+source("employee-attrition_preprocessing.R")
 
 set.seed(123)
 
 
-# ************************************************
-# preprocessing() :
-# data preprocessing function
-#
-# INPUT       :   dataframe - originalDataset - the original dataset 
-#
-# OUTPUT      :   dataframe - normalisedDataset - dataset set to be used for the ML models
-# ************************************************
-preprocessing <- function(originalDataset){
-  
-  print(DATASET_FILENAME)
 
-  #Print statistics of originalDataSet into the viewer.
-  basicStatistics(originalDataset)
-  
-  # Check for NA fields in original dataset
-
-
-  print(sapply(originalDataset,function(x) sum(is.na(x))))
-  
-  # Determine if fields are SYMBOLIC or NUMERIC (global)
-  field_types<<-FieldTypes(originalDataset)
-  
-  # Determine if NUMERIC fields are DISCREET or ORDINAL
-  field_Types_Discreet_Ordinal<- NPREPROCESSING_discreetNumeric(originalDataset,field_types,DISCREET_BINS)
-  discreet_fields <<- names(originalDataset)[field_Types_Discreet_Ordinal=="DISCREET"]
-  
-  results<-data.frame(field=names(originalDataset),initial=field_types,types1=field_Types_Discreet_Ordinal)
-  print(formattable::formattable(results))
-  
-  # Discreet subset 
-  discreetDataset<-originalDataset[,which(field_Types_Discreet_Ordinal==TYPE_DISCREET)]
-  
-  # Ordinals subset
-  ordinals<-originalDataset[,which(field_Types_Discreet_Ordinal==TYPE_ORDINAL)]
-  
-  fields_for_discreet <- c("Age", "DailyRate", "DistanceFromHome", "MonthlyIncome", "HourlyRate", 
-                           "MonthlyRate")
-  
-  # Create Bins and complete dataset before normalisation
-  ordinalBinsDataset <- discretiseFields(ordinals, fields_for_discreet)
-  
-  # Test if any ordinals are outliers and replace with mean values
-  #ordinalsDataset <- NPREPROCESSING_outlier(ordinals = ordinalBinsDataset, OUTLIER_CONFIDENCE)
-  
-  # Symbolic subset
-  symbolicDataset<-originalDataset[,which(field_types==TYPE_SYMBOLIC)]
-  
-  # One hot encode the following fields: Gender, OverTime, Attrition, MaritalStatus
-  fieldsForEncoding <- c("Gender", "OverTime", "Attrition", "MaritalStatus", "BusinessTravel", "Department", "JobRole", "EducationField")
-  oneHotDataset <- oneHotEncoding(dataset = symbolicDataset, fieldsForEncoding =fieldsForEncoding)
-  
-  # Create factors for ordered categorical fields
-  newSymbolicDataset <- oneHotDataset %>% mutate(across(c(Over18),
-                                                        ~as.numeric(as.factor(.))))
-  
-  # Combine symbolic and numeric datasets
-  dataBeforeNormalisation<-cbind(ordinalBinsDataset,discreetDataset,newSymbolicDataset)
-  
-  if(all(sapply(dataBeforeNormalisation, is.numeric ))){
-    print("All Fields Are Numeric")
-  }
-  
-  # remove fields that have zero variance
-  toRemove <- nearZeroVar(dataBeforeNormalisation, freqCut = FREQCUT) 
-  removedCols <- colnames(dataBeforeNormalisation)[toRemove]
-  print(paste("Removing the following columns as all values are the same"))
-  print(removedCols)
-  dataBeforeNormalisation <- dataBeforeNormalisation[, -toRemove]
-  
-  # Calculate correlation matrix
-  corMatrix <- cor(dataBeforeNormalisation)
-  
-  # find attributes that are highly corrected
-  highlyCorrelated <- findCorrelation(corMatrix, CUTOFF)
-  
-  #names of highly correlated fields
-  highlyCorCol <- colnames(dataBeforeNormalisation)[highlyCorrelated]
-  print("Removing the following columns due to high correlation")
-  print(highlyCorCol)
-  
-  # remove highly correlated fields
-  dataForNormalisation <- dataBeforeNormalisation[, -which(colnames(dataBeforeNormalisation) %in% highlyCorCol)]
-  dim(dataForNormalisation)
-  
-  # normalise dataset using function above
-  normalisedDataset <- as.data.frame(lapply(dataForNormalisation,normalise))
-  
-  # Remove employee number from normalised dataset
-  normalisedDataset<-subset(normalisedDataset, select = -EmployeeNumber)
-  
-  # Transforms all inputs to a logistic model mapped against AttritionYes
-  logisticModelTransformAllInputs<-glm(AttritionYes~.,family=binomial(link='logit'),data=normalisedDataset)
-  
-  # OPTIONAL Show importance
-  # uses caret library
-  #print(summary(logisticModelTransformAllInputs))
-  
-  # Analyze the table of deviance
-  print("Printing Deviance Analysis:")
-  print(anova(logisticModelTransformAllInputs))
-  
-  # Use caret library to determine scaled "importance"
-  importance<-as.data.frame(caret::varImp(logisticModelTransformAllInputs, scale = TRUE))
-  
-  
-  leastImportance <- rownames(importance %>% filter(Overall < 0.1))
-  
-  print(leastImportance)
-  
-  normalisedDataset <- select(normalisedDataset, -leastImportance)
-
-  
-  # Plot the % importance ordered from lowest to highest
-  barplot(t(importance[order(importance$Overall),,drop=FALSE]), las = 2, border = 0, cex.names = 0.8)
-  
-  return(normalisedDataset)
-}
 # ************************************************
 # main() :
 # main entry point to execute analytics
@@ -270,5 +158,9 @@ main<-function(){
   
   #reProcessedForest <<- createForest(trainingSetForest,OUTPUT_FIELD,FOREST_SIZE)
   
+  #lewisPlots()
+  
+  
 }
+
 main()

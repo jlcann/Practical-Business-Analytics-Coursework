@@ -2,94 +2,127 @@
 # This will store $name=field name, $type=field type
 manualTypes <- data.frame()
 
-# ************************************************
-# basicStatistics()
-# Output simple dataset field analysis results as a table in "Viewer"
-#
-# REQUIRES: formattable
-#
-# INPUT: data frame    - dataset, full dataset used for train/test
-#                      - Each row is one record, each column in named
-#                      - Values are not scaled or encoded
-#        String - OPTIONAL string which is used in table as a header
-#
-# OUTPUT : none
-#
-# Requires the library: PerformanceAnalytics
-#                       formattable
-# ************************************************
-basicStatistics<-function(dataset,...){
-  
-  tidyTable<-data.frame(Field=names(dataset),
-                        Catagorical=FALSE,
-                        Symbols=0,
-                        Name=0,
-                        Min=0.0,
-                        Mean=0.0,
-                        Max=0.0,
-                        Skew=0.0,
-                        stringsAsFactors = FALSE)
-  
-  for (i in 1:ncol(dataset)){
-    isFieldAfactor<-!is.numeric(dataset[,i])
-    tidyTable$Catagorical[i]<-isFieldAfactor
-    if (isFieldAfactor){
-      tidyTable$Symbols[i]<-length(unique(dataset[,i]))  #Number of symbols in catagorical
-      #Gets the count of each unique symbol
-      symbolTable<-sapply(unique(dataset[,i]),function(x) length(which(dataset[,i]==x)))
-      majoritySymbolPC<-round((sort(symbolTable,decreasing = TRUE)[1]/nrow(dataset))*100,digits=0)
-      tidyTable$Name[i]<-paste(names(majoritySymbolPC),"(",majoritySymbolPC,"%)",sep="")
-    } else
-    {
-      tidyTable$Max[i]<-round(max(dataset[,i]),2)
-      tidyTable$Mean[i]<-round(mean(dataset[,i]),2)
-      tidyTable$Min[i]<-round(min(dataset[,i]),2)
-      tidyTable$Skew[i]<-round(PerformanceAnalytics::skewness(dataset[,i],method="moment"),2)
-    }
-  }
-  
-  #Sort table so that all numerics are first
-  t<-formattable::formattable(tidyTable[order(tidyTable$Catagorical),],
-                              list(Catagorical = formatter("span",style = x ~ style(color = ifelse(x,"green", "red")),
-                                                           x ~ icontext(ifelse(x, "ok", "remove"), ifelse(x, "Yes", "No"))),
-                                   Symbols = formatter("span",style = x ~ style(color = "black"),x ~ ifelse(x==0,"-",sprintf("%d", x))),
-                                   Min = formatter("span",style = x ~ style(color = "black"), ~ ifelse(Catagorical,"-",format(Min, nsmall=2, big.mark=","))),
-                                   Mean = formatter("span",style = x ~ style(color = "black"),~ ifelse(Catagorical,"-",format(Mean, nsmall=2, big.mark=","))),
-                                   Max = formatter("span",style = x ~ style(color = "black"), ~ ifelse(Catagorical,"-",format(Max, nsmall=2, big.mark=","))),
-                                   Skew = formatter("span",style = x ~ style(color = "black"),~ ifelse(Catagorical,"-",sprintf("%.2f", Skew)))
-                              ))
-  print(t)
-}
 
 
 # ************************************************
-# FieldTypes() :
+# preprocessing() :
+# data preprocessing function
 #
-# Test each field for NUMERIC or SYMBOLIC
+# INPUT       :   dataframe - originalDataset - the original dataset 
 #
-# INPUT: Data Frame - dataset - data
-#
-# OUTPUT : Vector - Vector of types {NUMERIC, SYMBOLIC}
+# OUTPUT      :   dataframe - normalisedDataset - dataset set to be used for the ML models
 # ************************************************
-FieldTypes<-function(dataset){
+preprocessing <- function(originalDataset){
   
-  field_types<-vector()
-  for(field in 1:(ncol(dataset))){
-    
-    entry<-which(manualTypes$name==names(dataset)[field])
-    if (length(entry)>0){
-      field_types[field]<-manualTypes$type[entry]
-      next
-    }
-    
-    if (is.numeric(dataset[,field])) {
-      field_types[field]<-TYPE_NUMERIC
-    }
-    else {
-      field_types[field]<-TYPE_SYMBOLIC
-    }
+  print(DATASET_FILENAME)
+  
+  #Print statistics of originalDataSet into the viewer.
+  basicStatistics(originalDataset)
+  
+  # Check for NA fields in original dataset
+  
+  
+  print(sapply(originalDataset,function(x) sum(is.na(x))))
+  
+  # Determine if fields are SYMBOLIC or NUMERIC (global)
+  field_types<<-FieldTypes(originalDataset)
+  
+  # Determine if NUMERIC fields are DISCREET or ORDINAL
+  field_Types_Discreet_Ordinal<- NPREPROCESSING_discreetNumeric(originalDataset,field_types,DISCREET_BINS)
+  discreet_fields <<- names(originalDataset)[field_Types_Discreet_Ordinal=="DISCREET"]
+  
+  results<-data.frame(field=names(originalDataset),initial=field_types,types1=field_Types_Discreet_Ordinal)
+  print(formattable::formattable(results))
+  
+  # Discreet subset 
+  discreetDataset<-originalDataset[,which(field_Types_Discreet_Ordinal==TYPE_DISCREET)]
+  
+  # Ordinals subset
+  ordinals<-originalDataset[,which(field_Types_Discreet_Ordinal==TYPE_ORDINAL)]
+  
+  fields_for_discreet <- c("Age", "DailyRate", "DistanceFromHome", "MonthlyIncome", "HourlyRate", 
+                           "MonthlyRate")
+  
+  # Create Bins and complete dataset before normalisation
+  ordinalBinsDataset <- discretiseFields(ordinals, fields_for_discreet)
+  
+  # Test if any ordinals are outliers and replace with mean values
+  #ordinalsDataset <- NPREPROCESSING_outlier(ordinals = ordinalBinsDataset, OUTLIER_CONFIDENCE)
+  
+  # Symbolic subset
+  symbolicDataset<-originalDataset[,which(field_types==TYPE_SYMBOLIC)]
+  
+  # One hot encode the following fields: Gender, OverTime, Attrition, MaritalStatus
+  fieldsForEncoding <- c("Gender", "OverTime", "Attrition", "MaritalStatus", "BusinessTravel", "Department", "JobRole", "EducationField")
+  oneHotDataset <- oneHotEncoding(dataset = symbolicDataset, fieldsForEncoding =fieldsForEncoding)
+  
+  # Create factors for ordered categorical fields
+  newSymbolicDataset <- oneHotDataset %>% mutate(across(c(Over18),
+                                                        ~as.numeric(as.factor(.))))
+  
+  # Combine symbolic and numeric datasets
+  dataBeforeNormalisation<-cbind(ordinalBinsDataset,discreetDataset,newSymbolicDataset)
+  
+  if(all(sapply(dataBeforeNormalisation, is.numeric ))){
+    print("All Fields Are Numeric")
   }
-  return(field_types)
+  
+  # remove fields that have zero variance
+  toRemove <- nearZeroVar(dataBeforeNormalisation, freqCut = FREQCUT) 
+  removedCols <- colnames(dataBeforeNormalisation)[toRemove]
+  print(paste("Removing the following columns as all values are the same"))
+  print(removedCols)
+  dataBeforeNormalisation <- dataBeforeNormalisation[, -toRemove]
+  
+  # Calculate correlation matrix
+  corMatrix <- cor(dataBeforeNormalisation)
+  
+  # find attributes that are highly corrected
+  highlyCorrelated <- findCorrelation(corMatrix, CUTOFF)
+  
+  #names of highly correlated fields
+  highlyCorCol <- colnames(dataBeforeNormalisation)[highlyCorrelated]
+  print("Removing the following columns due to high correlation")
+  print(highlyCorCol)
+  
+  # remove highly correlated fields
+  dataForNormalisation <- dataBeforeNormalisation[, -which(colnames(dataBeforeNormalisation) %in% highlyCorCol)]
+  dim(dataForNormalisation)
+  
+  # normalise dataset using function above
+  normalisedDataset <- as.data.frame(lapply(dataForNormalisation,normalise))
+  
+  # Remove employee number from normalised dataset
+  normalisedDataset<-subset(normalisedDataset, select = -EmployeeNumber)
+  
+  # Transforms all inputs to a logistic model mapped against AttritionYes
+  logisticModelTransformAllInputs<-glm(AttritionYes~.,family=binomial(link='logit'),data=normalisedDataset)
+  
+  # OPTIONAL Show importance
+  # uses caret library
+  #print(summary(logisticModelTransformAllInputs))
+  
+  # Analyze the table of deviance
+  print("Printing Deviance Analysis:")
+  print(anova(logisticModelTransformAllInputs))
+  
+  # Use caret library to determine scaled "importance"
+  importance<-as.data.frame(caret::varImp(logisticModelTransformAllInputs, scale = TRUE))
+  
+  test1 <<- importance
+  leastImportance <- rownames(importance %>% filter(Overall < 0.1))
+  
+  print(leastImportance)
+  
+  normalisedDataset <- select(normalisedDataset, -leastImportance)
+  
+  
+  # Plot the % importance ordered from lowest to highest
+  barplot(t(importance[order(importance$Overall),,drop=FALSE]), las = 2, border = 0, cex.names = 0.8)
+  
+  nSubset<- subset(normalisedDataset, select = c(AttritionYes,MonthlyIncome,MonthlyRate,DailyRate,HourlyRate))
+  
+  return(normalisedDataset)
 }
 
 
@@ -121,7 +154,6 @@ oneHotEncoding<-function(dataset,fieldsForEncoding){
   # Return new dataset
   return(newData)
 }
-
 
 # ************************************************
 # normalise() :
@@ -159,9 +191,9 @@ NPREPROCESSING_discreetNumeric<-function(dataset,field_types,bins_cutoff){
     if (field_types[field]==TYPE_NUMERIC) {
       
       #Scale the whole field (column) to between 0 and 1
-
+      
       scaled_column<-normalise(dataset[,field])
-
+      
       
       #Generate the "bins_cutoff" points for each of 10 bins
       #so we will get 0-0.1, 0.1-0.2...0.9-1.0
@@ -186,7 +218,7 @@ NPREPROCESSING_discreetNumeric<-function(dataset,field_types,bins_cutoff){
         field_types[field]<-TYPE_DISCREET
       else
         field_types[field]<-TYPE_ORDINAL
-
+      
       
     } #endif numeric types
   } #endof for
@@ -351,48 +383,6 @@ kFoldTrainingSplit <- function(dataset, fold){
   return(separatedData)
   
 }
-
-
-# ************************************************
-# kFoldModel() :
-#
-# 
-#
-# INPUT   : dataset - dataset contained in data.frame
-#           FUN - Function Name (Model)
-#
-# OUTPUT : None
-# ************************************************
-
-#Not finish, see comment below.
-kFoldModel <- function(FUN,dataset,outputField,...){
-  
-  results <- data.frame()
-  
-  for (i in 1:K_FOLDS) {
-    
-    separatedData<-kFoldTrainingSplit(dataset,i)
-    
-    modelMeasures<-FUN(train=separatedData$train,
-                       test=separatedData$test,outputField,...)
-    results <- rbind(results, modelMeasures)
-    
-  }
-  
-  resultMeans<-colMeans(results)
-  resultMeans[1:4]<-as.integer(resultMeans[1:4])
-  
-  if(deparse(substitute(FUN)) == "train_MLP_Model"){
-    plotConfusionMatrix(as.list(resultMeans), "MLP Model Confusion Matrix")
-  } else {
-    plotConfusionMatrix(as.list(resultMeans), "Decision Trees Confusion Matrix")
-  }
-  #Need to return the averages of the rows in results.
-  
-  return(as.list(resultMeans))
-}
-
-
 
 discretiseFields <-function(dataset, fields){
   
