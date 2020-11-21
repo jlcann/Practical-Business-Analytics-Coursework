@@ -46,9 +46,6 @@ preprocessing <- function(originalDataset){
   # Create Bins and complete dataset before normalisation
   ordinalBinsDataset <- discretiseFields(ordinals, fields_for_discreet)
   
-  # Test if any ordinals are outliers and replace with mean values
-  #ordinalsDataset <- NPREPROCESSING_outlier(ordinals = ordinalBinsDataset, OUTLIER_CONFIDENCE)
-  
   # Symbolic subset
   symbolicDataset<-originalDataset[,which(field_types==TYPE_SYMBOLIC)]
   
@@ -62,6 +59,10 @@ preprocessing <- function(originalDataset){
   
   # Combine symbolic and numeric datasets
   dataBeforeNormalisation<-cbind(ordinalBinsDataset,discreetDataset,newSymbolicDataset)
+  
+  # Test if any ordinals are outliers and replace with mean values
+  #ordinalsDataset <- NPREPROCESSING_outlier(ordinals = ordinalBinsDataset, OUTLIER_CONFIDENCE)
+  checkForOutliers(dataBeforeNormalisation)
   
   if(all(sapply(dataBeforeNormalisation, is.numeric ))){
     print("All Fields Are Numeric")
@@ -384,6 +385,18 @@ kFoldTrainingSplit <- function(dataset, fold){
   
 }
 
+# ************************************************
+# discretiseFields() :
+#
+# Function for creating bins for the dataset
+#
+# INPUT   : dataset - data.frame - dataset to be used
+#         : fields  - vector     - vector of fields to be binned from the dataset
+#
+# OUTPUT  : dataset - data.frame - dataset with the binned data 
+#
+#*************************************************
+
 discretiseFields <-function(dataset, fields){
   
   for (i in fields){
@@ -393,6 +406,18 @@ discretiseFields <-function(dataset, fields){
   return(dataset)
   
 }
+
+# ************************************************
+# createHoldoutDataset() :
+#
+# Function for creating the holdout data
+#
+# INPUT   : dataset - data.frame - dataset to be used
+#         : holdout - integer    - value to be used as the holdout value 
+#
+# OUTPUT  : list - list of datasets with the training and testing datasets  
+#
+#*************************************************
 
 createHoldoutDataset <-function(dataset, holdout){
   trainingSampleSize <- round(nrow(dataset))*(HOLDOUT/100)
@@ -404,4 +429,32 @@ createHoldoutDataset <-function(dataset, holdout){
   testSet <- dataset[-(1:trainingSampleSize),]
   
   return(list(training = trainingSet, test = testSet))
+}
+
+# ************************************************
+# checkForOutliers() :
+#
+# Function to check the dataset for outliers
+#
+# INPUT   : dataset - data.frame - dataset to be used
+#
+# OUTPUT  : NA
+#
+#*************************************************
+
+checkForOutliers <- function(dataset){
+  sum <- 0
+  for (i in colnames(dataset)){
+    boxplots = boxplot(dataset, plot = FALSE)$i
+    
+    which(dataset %in% boxplots)
+    #print(paste("There are", length(which(dataset %in% boxplots)), "Outliers for the field", i))
+    sum = sum + length(which(dataset %in% boxplots))
+    
+    # cant figure out how to change to mean instead of removing
+    dataset[ !(dataset %in% boxplots) ]
+    
+  }
+  
+  print(paste("There Are ", sum, " Outliers In The Dataset"))
 }
