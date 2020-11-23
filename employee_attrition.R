@@ -106,10 +106,10 @@ main<-function(){
   randomisedDataset <- preprocessedDataset[sample(nrow(preprocessedDataset)),]
   
   #Return a list containing the training and the test datasets with holdout method.
-  holdoutDataset <<- createHoldoutDataset(randomisedDataset, HOLDOUT)
+  #holdoutDataset <<- createHoldoutDataset(randomisedDataset, HOLDOUT)
 
   #Create a stratified data frame ready for stratified k-fold validation
-  stratifiedData <- stratifyDataset(preprocessedDataset,OUTPUT_FIELD,K_FOLDS)
+  #stratifiedData <- stratifyDataset(preprocessedDataset,OUTPUT_FIELD,K_FOLDS)
   
     
   #first_model <<- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD,plotConf = T)
@@ -158,7 +158,8 @@ main<-function(){
   
   #reProcessedForest <<- createForest(trainingSetForest,OUTPUT_FIELD,FOREST_SIZE)
   
-  #lewisPlots()
+  # Plots for the exploration phase
+  explorationPlots()
   
   
 }

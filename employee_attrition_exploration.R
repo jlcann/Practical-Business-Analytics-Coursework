@@ -95,30 +95,6 @@ FieldTypes<-function(dataset){
 
 
 # ****************
-# barplotDiscreet() :
-#   Exploration method to plot a barplot for each 
-#   discreet field to visualize field spread
-#
-# INPUT       :   dataframe - dataset           - dataset to barplot
-#
-# OUTPUT      :   barplot for each field in dataset
-# ****************
-
-barplotDiscreet <-function(dataset){
-  for(field in 1:(ncol(dataset))){
-    single <- table(dataset[field])
-    barplot(single,
-            main = paste("Barplot for: ", names(dataset[field])),
-            beside=TRUE,
-            xlab = "Level/rating",
-            col = rainbow(10)
-            
-    )
-  }
-}
-
-
-# ****************
 # boxplotAll() :
 #   Exploration method to plot a boxplot for each 
 #   field to visualize data and see outliers
@@ -128,7 +104,10 @@ barplotDiscreet <-function(dataset){
 # OUTPUT      :   boxplot for each field in dataset
 # ****************
 boxplotAll <-function(dataset){
+  # Iterate through dataset
   for(field in 1:(ncol(dataset))){
+    
+    # Create a boxplot for each field in dataset
     boxplot(dataset[field],
             main = paste("Boxplot for: ", names(dataset[field])),
             xlab = "Units",
@@ -143,24 +122,27 @@ boxplotAll <-function(dataset){
 
 # ****************
 # attritionBars() :
-#   Exploration method to plot a barplot the top 5 
+#   Exploration method to plot a barplot of the top 5 
 #   important field against Attrition
 #
 # INPUT       :   dataframe - dataset           - dataset to barplot
-#                 field - outcome               - field to plot against
+#                 field - field                 - field to plot against
 #
 # OUTPUT      :   barplot for each field in dataset
 # ****************
-
-
-attritionBars <- function(dataset, field){ # EDIT X AXIS EDIT X AXIS EDIT X AXIS EDIT X AXIS EDIT X
+attritionBars <- function(dataset, field){ 
   
+  # Iterate through dataset
   for (i in colnames(dataset)){
+    
+    # Check if i in dataset is equal to the field being plotted against
     if (i == field){
+      # If equal to field then skip
       next
     } else {
       print(i)
       
+      # Plot boxplot for each field in dataset
       graph <- dataset %>%
         ggplot(aes_string(x = i, group = field)) + 
         geom_bar(aes(y = ..prop.., fill = factor(..x..)), 
@@ -172,9 +154,10 @@ attritionBars <- function(dataset, field){ # EDIT X AXIS EDIT X AXIS EDIT X AXIS
         labs(y = "Percentage", fill= i) +
         facet_grid(as.formula(paste("~", field))) +
         theme_minimal()+
-        theme(legend.position = "none", plot.title = element_text(hjust = 0.5)) + 
-        ggtitle(paste("Attrition VS", i))
+        theme(legend.position = "none", plot.title = element_text(hjust = 0.5, face="bold", size=16)) + 
+        ggtitle(paste("Change of percentage on ", i, " when Attrition is No or Yes"))
       
+      # Print the boxplot
       print(graph)
     }
   }
@@ -182,10 +165,12 @@ attritionBars <- function(dataset, field){ # EDIT X AXIS EDIT X AXIS EDIT X AXIS
 }
 
 
-
-lewisPlots <-function() {
+# Main function for plotting graphs and plots for data exploration
+explorationPlots <-function() {
+  
   # Barplot for Attrition count
-  barplotAttrition <- originalDataset %>% # LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS
+  # Plots the total number of Attrition being Yes or No
+  barplotAttrition <- originalDataset %>% 
     group_by(Attrition) %>%
     tally() %>%
     ggplot(aes(x = Attrition, y = n,fill=Attrition)) +
@@ -194,48 +179,56 @@ lewisPlots <-function() {
     scale_fill_manual(values=c("#FF3F3F", "#9EFF95"))+
     labs(x="Attrition", y="Count of Attriation")+
     ggtitle("Attrition Count")+
-    theme(plot.title = element_text(hjust = 0.5))+
+    theme(plot.title = element_text(hjust = 0.5, face="bold", size=16))+
     geom_text(aes(label = n), vjust = -0.4, position = position_dodge(0.7))
   
   # Print the Attrition barplot
-  print(barplotAttrition) # LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS
+  print(barplotAttrition) 
+  
   
   # Barplot job role against Attrition
+  # Plots the ratio of attrition for each job role
   jobRoleAttrition <- originalDataset %>%
     ggplot(mapping = aes(x = JobRole)) +
-    scale_fill_manual(values=c("#FF3F3F", "#9EFF95"))+
-    geom_histogram(aes(fill = Attrition), stat = "count")+
-    stat_count(aes(y=..count..,label=..count.., group = Attrition),geom="text",vjust=-1)+
-    theme(legend.position = "top", plot.title = element_text(hjust = 0.5))+
+    scale_fill_manual(values=c("#FF3F3F", "#9EFF95")) +
+    geom_histogram(aes(fill = Attrition), stat = "count") +
+    stat_count(aes(y=..count..,label=..count.., group = Attrition),geom="text",vjust=-1) +
+    theme(legend.position = "top", plot.title = element_text(hjust = 0.5, face="bold", size=16)) +
     labs(x="Job Role", y="Number Attriation")+
     ggtitle("Attrition in regards to Job Role")
   
   # Print the Job Role against Attrition barplot
   print(jobRoleAttrition)
   
+  
   # Barplot Monthly income against Attrition
+  # Plots the ratio of attrition for each monthly income bin
   monthlyIncomeAttrition<-originalDataset %>%
     ggplot(mapping = aes(x = MonthlyIncome)) + 
     scale_fill_manual(values=c("#FF3F3F", "#9EFF95"))+
     geom_histogram(aes(fill = Attrition), bins=8)+
     stat_bin(bins = 8, geom="text",aes(label=..count.., group=Attrition), vjust=-1)+
-    theme(legend.position = "top", plot.title = element_text(hjust = 0.5))+
+    theme(legend.position = "top", plot.title = element_text(hjust = 0.5, face="bold", size=16))+
     labs(x="Monthlt Income", y="Number Attriation")+
     ggtitle("Attrition in regards to Monthly Income")
   
   # Print the Monthly Income against Attrition barplot
   print(monthlyIncomeAttrition)
   
-  #crash = crashhere(print) # LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS
   
-  # Boxplot all numeric fields
-  boxplotAllFields<-boxplotAll(originalDataset[,which(field_types==TYPE_NUMERIC)]) # LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS
+  # Boxplot all numeric fields for general exploration of dataset
+  boxplotAllFields<-boxplotAll(originalDataset[,which(field_types==TYPE_NUMERIC)])
+  
   
   # Pearson correlation plot for all numeric fields
-  #print(ggcorr(originalDataset[,which(field_types==TYPE_NUMERIC)], method = c("everything", "pearson")))# LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS
+  # Visualise the correlation between each field in the dataset
+  print(ggcorr(originalDataset[,which(field_types==TYPE_NUMERIC)], method = c("everything", "pearson"))+
+        ggplot2::labs(title = "Correlation plot for all numeric fields in dataset") +
+          theme(plot.title = element_text(hjust = 0.5, face="bold", size=16)))
+  
   
   # Boxplot Monthly Income for each Job Level
-  boxplotIncomeJob <- boxplot(MonthlyIncome~JobLevel, # LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS
+  boxplotIncomeJob <- boxplot(MonthlyIncome~JobLevel,
                               data=originalDataset,
                               main="Boxplots for Monthly Income against Job Level",
                               xlab="Job Level",
@@ -245,7 +238,7 @@ lewisPlots <-function() {
   )
   
   # Boxplot Monthly Income for Gender
-  boxplotIncomeGender <- boxplot(MonthlyIncome~Gender, # LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS
+  boxplotIncomeGender <- boxplot(MonthlyIncome~Gender,
                                  data=originalDataset,
                                  main="Boxplots for Monthly Income against Gender",
                                  xlab="Gender",
@@ -255,7 +248,7 @@ lewisPlots <-function() {
   )
   
   # Boxplot Monthly Income for OverTime Yes and No
-  boxplotIncomeOverTime <- boxplot(MonthlyIncome~OverTime, # LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS
+  boxplotIncomeOverTime <- boxplot(MonthlyIncome~OverTime, 
                                    data=originalDataset,
                                    main="Boxplots for Monthly Income against Over Time",
                                    xlab="OverTime",
@@ -264,15 +257,6 @@ lewisPlots <-function() {
                                    border="black"
   )
   
-  # Boxplot Daily Rate for OverTime Yes and No
-  boxplotDailyOverTime <- boxplot(DailyRate~OverTime, # LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS LEWIS
-                                  data=originalDataset,
-                                  main="Boxplots for Daily Rate against Over Time",
-                                  xlab="OverTime",
-                                  ylab="DailyRate",
-                                  col="#9EFF95",
-                                  border="black"
-  )
   
   # Plot scatterplot for Monthly Income against Total Working Years (experience)
   scatterIncomeExperience <- ggplot(originalDataset, aes(x=TotalWorkingYears, y=MonthlyIncome)) +
@@ -292,18 +276,23 @@ lewisPlots <-function() {
   # Print the scatterplots for experience and loyalty
   print(doubleScatterPlot)
   
+  
   # Density hex plot of Age against MonthlyIncome
+  # Visualise the average colleague age and income
   densityAgeIncome<-ggplot(originalDataset, aes(x=Age, y=MonthlyIncome) ) +
     geom_hex(bins = 8) +
     scale_fill_continuous(type = "viridis") +
-    theme_bw()
+    theme(plot.title = element_text(hjust = 0.5, face="bold", size=16)) +
+    ggtitle("Density plot for Age against Monthly Income")
   
   # Print density plot of age against monthly income
   print(densityAgeIncome)
   
+  
   # Dataset of the 5 most impactful fields on Attrition
   highImportanceDataset <- subset(originalDataset, select=c(JobInvolvement, JobSatisfaction, NumCompaniesWorked, 
                                                             EnvironmentSatisfaction, OverTime, Attrition))
+  
   
   # Bar plots for the high importance fields against attrition
   barplotImportantFields <- attritionBars(highImportanceDataset, "Attrition") 
