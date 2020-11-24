@@ -99,11 +99,20 @@ set.seed(123)
 main<-function(){
   print("Inside main function")
   
-  originalDataset <<- read.csv(DATASET_FILENAME, encoding = "UTF-8", stringsAsFactors = FALSE)
+  originalDataset <- read.csv(DATASET_FILENAME, encoding = "UTF-8", stringsAsFactors = FALSE)
   
-  preprocessedDataset <<- preprocessing(originalDataset)
+  # Check for NA fields in original dataset
+  print(sapply(originalDataset,function(x) sum(is.na(x))))
   
-  randomisedDataset <- preprocessedDataset[sample(nrow(preprocessedDataset)),]
+  # Determine if fields are SYMBOLIC or NUMERIC (global)
+  field_types<-FieldTypes(originalDataset)
+  
+  # Plots for the exploration phase
+  explorationPlots(originalDataset, field_types)
+  
+  preprocessedDataset <<- preprocessing(originalDataset, field_types)
+  
+  #randomisedDataset <- preprocessedDataset[sample(nrow(preprocessedDataset)),]
   
   #Return a list containing the training and the test datasets with holdout method.
   #holdoutDataset <<- createHoldoutDataset(randomisedDataset, HOLDOUT)
@@ -157,10 +166,6 @@ main<-function(){
   #trainingSetForest <- newDatasetForForest[1:trainingSampleSize,]
   
   #reProcessedForest <<- createForest(trainingSetForest,OUTPUT_FIELD,FOREST_SIZE)
-  
-  # Plots for the exploration phase
-  explorationPlots()
-  
   
 }
 

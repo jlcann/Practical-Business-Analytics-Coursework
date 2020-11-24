@@ -140,8 +140,6 @@ attritionBars <- function(dataset, field){
       # If equal to field then skip
       next
     } else {
-      print(i)
-      
       # Plot boxplot for each field in dataset
       graph <- dataset %>%
         ggplot(aes_string(x = i, group = field)) + 
@@ -151,7 +149,7 @@ attritionBars <- function(dataset, field){
         geom_text(aes(label = scales::percent(..prop..), y = ..prop.. ), 
                   stat= "count", 
                   vjust = -0.4) +
-        labs(y = "Percentage", fill= i) +
+        labs(y = "Percentage %", fill= i) +
         facet_grid(as.formula(paste("~", field))) +
         theme_minimal()+
         theme(legend.position = "none", plot.title = element_text(hjust = 0.5, face="bold", size=16)) + 
@@ -166,7 +164,10 @@ attritionBars <- function(dataset, field){
 
 
 # Main function for plotting graphs and plots for data exploration
-explorationPlots <-function() {
+explorationPlots <-function(originalDataset, field_types) {
+  
+  #Print statistics of originalDataSet into the viewer.
+  basicStatistics(originalDataset)
   
   # Barplot for Attrition count
   # Plots the total number of Attrition being Yes or No
@@ -177,7 +178,7 @@ explorationPlots <-function() {
     geom_bar(stat = "identity") +
     theme_minimal()+
     scale_fill_manual(values=c("#FF3F3F", "#9EFF95"))+
-    labs(x="Attrition", y="Count of Attriation")+
+    labs(x="Attrition", y="Count of Attrition")+
     ggtitle("Attrition Count")+
     theme(plot.title = element_text(hjust = 0.5, face="bold", size=16))+
     geom_text(aes(label = n), vjust = -0.4, position = position_dodge(0.7))
@@ -194,7 +195,7 @@ explorationPlots <-function() {
     geom_histogram(aes(fill = Attrition), stat = "count") +
     stat_count(aes(y=..count..,label=..count.., group = Attrition),geom="text",vjust=-1) +
     theme(legend.position = "top", plot.title = element_text(hjust = 0.5, face="bold", size=16)) +
-    labs(x="Job Role", y="Number Attriation")+
+    labs(x="Job Role", y="Attrition count")+
     ggtitle("Attrition in regards to Job Role")
   
   # Print the Job Role against Attrition barplot
@@ -206,94 +207,109 @@ explorationPlots <-function() {
   monthlyIncomeAttrition<-originalDataset %>%
     ggplot(mapping = aes(x = MonthlyIncome)) + 
     scale_fill_manual(values=c("#FF3F3F", "#9EFF95"))+
-    geom_histogram(aes(fill = Attrition), bins=8)+
-    stat_bin(bins = 8, geom="text",aes(label=..count.., group=Attrition), vjust=-1)+
+    geom_histogram(aes(fill = Attrition), binwidth = 2000, boundary = 0)+
     theme(legend.position = "top", plot.title = element_text(hjust = 0.5, face="bold", size=16))+
-    labs(x="Monthlt Income", y="Number Attriation")+
+    labs(x="Monthly Income ($)", y="Attrition count")+
+    scale_x_continuous(breaks = seq(from = round(min(originalDataset$MonthlyIncome), digits = -10),
+                                    to = round(max(originalDataset$MonthlyIncome), digits = -1), by = 2000))+
     ggtitle("Attrition in regards to Monthly Income")
   
   # Print the Monthly Income against Attrition barplot
   print(monthlyIncomeAttrition)
   
-  
   # Boxplot all numeric fields for general exploration of dataset
   boxplotAllFields<-boxplotAll(originalDataset[,which(field_types==TYPE_NUMERIC)])
-  
-  
+
+
   # Pearson correlation plot for all numeric fields
   # Visualise the correlation between each field in the dataset
   print(ggcorr(originalDataset[,which(field_types==TYPE_NUMERIC)], method = c("everything", "pearson"))+
         ggplot2::labs(title = "Correlation plot for all numeric fields in dataset") +
           theme(plot.title = element_text(hjust = 0.5, face="bold", size=16)))
-  
-  
+
+
   # Boxplot Monthly Income for each Job Level
   boxplotIncomeJob <- boxplot(MonthlyIncome~JobLevel,
                               data=originalDataset,
                               main="Boxplots for Monthly Income against Job Level",
                               xlab="Job Level",
-                              ylab="MonthlyIncome",
+                              ylab="Monthly Income ($)",
                               col="#FF3F3F",
                               border="black"
   )
-  
+
   # Boxplot Monthly Income for Gender
   boxplotIncomeGender <- boxplot(MonthlyIncome~Gender,
                                  data=originalDataset,
                                  main="Boxplots for Monthly Income against Gender",
                                  xlab="Gender",
-                                 ylab="MonthlyIncome",
+                                 ylab="Monthly Income ($)",
                                  col="#9EFF95",
                                  border="black"
   )
-  
+
   # Boxplot Monthly Income for OverTime Yes and No
-  boxplotIncomeOverTime <- boxplot(MonthlyIncome~OverTime, 
+  boxplotIncomeOverTime <- boxplot(MonthlyIncome~OverTime,
                                    data=originalDataset,
                                    main="Boxplots for Monthly Income against Over Time",
                                    xlab="OverTime",
-                                   ylab="MonthlyIncome",
+                                   ylab="Monthly Income ($)",
                                    col="#FF3F3F",
                                    border="black"
   )
   
-  
+  # Boxplot Monthly Income for each Job Role
+  boxplotIncomeJob <- boxplot(MonthlyIncome~JobRole,
+                              data=originalDataset,
+                              main="Boxplots for Monthly Income against Job Role",
+                              xlab="Job Role",
+                              ylab="Monthly Income ($)",
+                              col="#FF3F3F",
+                              border="black"
+  )
+
+
   # Plot scatterplot for Monthly Income against Total Working Years (experience)
   scatterIncomeExperience <- ggplot(originalDataset, aes(x=TotalWorkingYears, y=MonthlyIncome)) +
     geom_point(size=2, shape=1) +
+    labs(x="Total Working Years", y="Monthly Income ($)")+
     geom_smooth(method=lm,color="#FF3F3F")
-  
+
   # Plot scatterplot for Monthly Income against Years At Company (loyalty)
   scatterIncomeLoyalty <- ggplot(originalDataset, aes(x=YearsAtCompany, y=MonthlyIncome)) +
     geom_point(size=2, shape=1) +
+    labs(x="Total years at the Company", y="Monthly Income ($)")+
     geom_smooth(method=lm,color="#9EFF95")
-  
+
   # Join the scatterplots on one page for Monthly Income based on experience and loyalty for comparison
-  doubleScatterPlot <- ggarrange(scatterIncomeExperience, scatterIncomeLoyalty + rremove("x.text"), 
+  doubleScatterPlot <- ggarrange(scatterIncomeExperience, scatterIncomeLoyalty,
                                  labels = c("Experience", "Loyalty"),
                                  ncol = 2, nrow = 1)
-  
+
   # Print the scatterplots for experience and loyalty
   print(doubleScatterPlot)
-  
-  
+
+
   # Density hex plot of Age against MonthlyIncome
   # Visualise the average colleague age and income
   densityAgeIncome<-ggplot(originalDataset, aes(x=Age, y=MonthlyIncome) ) +
+    labs(x="Age in years", y="Monthly Income ($)")+
     geom_hex(bins = 8) +
     scale_fill_continuous(type = "viridis") +
     theme(plot.title = element_text(hjust = 0.5, face="bold", size=16)) +
     ggtitle("Density plot for Age against Monthly Income")
-  
+
   # Print density plot of age against monthly income
   print(densityAgeIncome)
-  
-  
+
+
   # Dataset of the 5 most impactful fields on Attrition
-  highImportanceDataset <- subset(originalDataset, select=c(JobInvolvement, JobSatisfaction, NumCompaniesWorked, 
+  # based on analysis from pre-processing
+  highImportanceDataset <- subset(originalDataset, select=c(JobInvolvement, JobSatisfaction, NumCompaniesWorked,
                                                             EnvironmentSatisfaction, OverTime, Attrition))
-  
-  
+
+
   # Bar plots for the high importance fields against attrition
-  barplotImportantFields <- attritionBars(highImportanceDataset, "Attrition") 
+  barplotImportantFields <- attritionBars(highImportanceDataset, "Attrition")
+
 }
