@@ -123,7 +123,9 @@ preprocessing <- function(originalDataset){
   
   nSubset<- subset(normalisedDataset, select = c(AttritionYes,MonthlyIncome,MonthlyRate,DailyRate,HourlyRate))
   
-  return(normalisedDataset)
+  randomisedDataset <- normalisedDataset[sample(nrow(normalisedDataset)),]
+  
+  return(randomisedDataset)
 }
 
 
@@ -400,7 +402,7 @@ kFoldTrainingSplit <- function(dataset, fold){
 discretiseFields <-function(dataset, fields){
   
   for (i in fields){
-    dataset[,i] <-as.numeric(bin(dataset[,i], nbins=10, labels=c(1:10), method = "length"))
+    dataset[,i] <-as.numeric(bin(dataset[,i], nbins=10, labels=c(1:10), method = "content"))
   }
   
   return(dataset)

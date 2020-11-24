@@ -1,11 +1,11 @@
+# Reset the global environment list of all variables and objects.
 rm(list=ls())
-# Global Environment variables
-# - i.e. available to all functions
-# Constants are definied at the top of the file in capital snake case
 
-DATASET_FILENAME  <- "employee-attrition.csv"   # Name of input dataset file
-OUTPUT_FIELD      <- "AttritionYes"             # Field name of the output class to predict
-ORIGINAL_OUTPUT_FIELD <- "Attrition"            # Field name of the output class in the original dataset
+# Below are constants defined for use throughout the project.
+
+DATASET_FILENAME      <- "employee-attrition.csv"   # Name of input dataset file
+OUTPUT_FIELD          <- "AttritionYes"             # Field name of the output class to predict
+ORIGINAL_OUTPUT_FIELD <- "Attrition"                # Field name of the output class in the original dataset
 
 
 TYPE_DISCREET     <- "DISCREET"           # field is discreet (numeric)
@@ -14,20 +14,19 @@ TYPE_SYMBOLIC     <- "SYMBOLIC"           # field is a string
 TYPE_NUMERIC      <- "NUMERIC"            # field is initially a numeric
 TYPE_IGNORE       <- "IGNORE"             # field is not encoded
 DISCREET_BINS     <- 5                    # Number of Discreet Bins Required for 
-OUTLIER_CONFIDENCE <- 0.99                # Confidence of discreet 
+OUTLIER_CONFIDENCE<- 0.99                 # Confidence for outlive removal 
 CUTOFF            <- 0.90                 # Correlation cutoff
 HOLDOUT           <- 70                   # Holdout percentage for training set                  
 FREQCUT           <- 99/1                 # To remove zero variance fields
 FOREST_SIZE       <- 1000                 # Number of trees in the forest
 
-NN_BATCH_SIZE <- 30
-NN_OPTIMISER <- "adam"
-NN_DROPOUT <- 0.1
-NN_HIDDEN_RELU <- 16
-NN_HIDDEN_SIGMOID <- 1
-NN_EPOCHS <- 100# Maximum number of training epochs
-
-K_FOLDS        <- 20 # Number of holds for stratified cross validation
+NN_BATCH_SIZE     <- 30                   # Batch size for MLP Model Fitting
+NN_OPTIMISER      <- "adam"               # Name of the optimization algorithm used for MLP Model Fitting
+NN_DROPOUT        <- 0.1                  # 10% Dropout for the MLP Model
+NN_HIDDEN_RELU    <- 16                   # Number of neurons for the MLP Dense Layer with Relu Activation 
+NN_HIDDEN_SIGMOID <- 1                    # Number of neurons for the MLP Dense Layer with Sigmoid Activation 
+NN_EPOCHS         <- 100                  # Maximum number of training epochs for MLP Model Fitting
+K_FOLDS           <- 20                   # Number of holds for stratified cross validation
 
 
 # Define and then load the libraries used in this project
@@ -47,6 +46,14 @@ K_FOLDS        <- 20 # Number of holds for stratified cross validation
 # tensorflow             2.2.0
 # stringr                1.4.0
 # tidyrules              0.1.5
+# OneR                   2.2.0
+# ggplot2                3.3.2
+# ggpubr                 0.4.0
+# GGally                 2.0.0
+# hrbrthemes             0.8.0
+# hexbin                 1.28.1
+
+# List of libraries used in the project, ready for install / loading below.
 MYLIBRARIES<-c("outliers",
                "corrplot",
                "MASS",
@@ -68,7 +75,8 @@ MYLIBRARIES<-c("outliers",
                "hrbrthemes",
                "hexbin")
 
-gc() # garbage collection to automatically release memory
+# garbage collection to automatically release memory
+gc()
 
 # clears the console area
 cat("\014")
@@ -82,6 +90,7 @@ source("employee-attrition_model_functions.R")
 source("employee_attrition_exploration.R")
 source("employee-attrition_preprocessing.R")
 
+#Set the seed for the project, so randomization are consistent between runs.
 set.seed(123)
 
 
@@ -97,34 +106,41 @@ set.seed(123)
 # Keeps all objects as local to this function
 # ************************************************
 main<-function(){
-  print("Inside main function")
   
+  # Load the chosen dataset into a data.frame object.
   originalDataset <<- read.csv(DATASET_FILENAME, encoding = "UTF-8", stringsAsFactors = FALSE)
   
+  # Pass the dataset into the preprocessing function, which returns a data frame which 
+  #has been processed, normalized and randomised ready for modelling. 
   preprocessedDataset <<- preprocessing(originalDataset)
   
-  randomisedDataset <- preprocessedDataset[sample(nrow(preprocessedDataset)),]
   
-  #Return a list containing the training and the test datasets with holdout method.
-  holdoutDataset <<- createHoldoutDataset(randomisedDataset, HOLDOUT)
+  #Return a list containing two data frames, one for training models, and one for testing models.
+  holdoutDataset <- createHoldoutDataset(preprocessedDataset, HOLDOUT)
 
   #Create a stratified data frame ready for stratified k-fold validation
   stratifiedData <- stratifyDataset(preprocessedDataset,OUTPUT_FIELD,K_FOLDS)
   
     
-  #first_model <<- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD,plotConf = T)
+  #Uncomment below and run the script to train a MLP model on the training and test data produced using the simple
+  #70//30 split holdout method.
+  #This will return the model accuracy statistics in the Viewer, and also a confusion matrix in the Plots.
   
+  #mlpWithHoldout <- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD,plotConf = T)
   
+
+  #Uncomment below to run the MLP Model using Stratified Cross Validation 
+  #This will return accuracy stats in the viewer as well as a confusion matrix in the PLots.
   
   #splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD)
   
-  #Create standard decision trees from raw data and pre-processed data
   
-  #processedDT <- createDT(trainingSet, testSet, OUTPUT_FIELD, T)
-    
-  #kfoldTree <<- kFoldModel(createDT, stratifiedData, OUTPUT_FIELD, plot=T)
+  #Uncomment below to create a random decision forest using Stratified Cross Validation
+  #Once again this will return accuracy statistics in the Viewer as well as a Confusion Matrix in the plots.
   
-  #kfoldTree <<- kFoldModel(createForest, stratifiedData, OUTPUT_FIELD, forestSize = FOREST_SIZE, plot=T)
+  #kfoldTree <- kFoldModel(createForest, stratifiedData, OUTPUT_FIELD, forestSize = FOREST_SIZE, plot=T)
+
+
   
   #randomisedRawDataset <- originalDataset[sample(nrow(originalDataset)),]
   
@@ -158,9 +174,9 @@ main<-function(){
   
   #reProcessedForest <<- createForest(trainingSetForest,OUTPUT_FIELD,FOREST_SIZE)
   
-  #lewisPlots()
   
   
 }
 
+# Run the main function.
 main()
