@@ -108,11 +108,16 @@ set.seed(123)
 main<-function(){
   
   # Load the chosen dataset into a data.frame object.
-  originalDataset <<- read.csv(DATASET_FILENAME, encoding = "UTF-8", stringsAsFactors = FALSE)
+  originalDataset <- read.csv(DATASET_FILENAME, encoding = "UTF-8", stringsAsFactors = FALSE)
+  
+  # Determine if fields are SYMBOLIC or NUMERIC
+  field_types<-FieldTypes(originalDataset)
+  
+  explorationPlots(originalDataset, field_types)
   
   # Pass the dataset into the preprocessing function, which returns a data frame which 
   #has been processed, normalized and randomised ready for modelling. 
-  preprocessedDataset <<- preprocessing(originalDataset)
+  preprocessedDataset <- preprocessing(originalDataset, field_types)
   
   
   #Return a list containing two data frames, one for training models, and one for testing models.

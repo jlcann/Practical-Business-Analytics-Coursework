@@ -12,24 +12,17 @@ manualTypes <- data.frame()
 #
 # OUTPUT      :   dataframe - normalisedDataset - dataset set to be used for the ML models
 # ************************************************
-preprocessing <- function(originalDataset){
+preprocessing <- function(originalDataset, field_types){
   
-  print(DATASET_FILENAME)
-  
-  #Print statistics of originalDataSet into the viewer.
-  basicStatistics(originalDataset)
+  print("Starting Data Pre-Processing Stage")
   
   # Check for NA fields in original dataset
-  
-  
+  print("Checking fields for missing data. Number of missing data in each field:")
   print(sapply(originalDataset,function(x) sum(is.na(x))))
-  
-  # Determine if fields are SYMBOLIC or NUMERIC (global)
-  field_types<<-FieldTypes(originalDataset)
   
   # Determine if NUMERIC fields are DISCREET or ORDINAL
   field_Types_Discreet_Ordinal<- NPREPROCESSING_discreetNumeric(originalDataset,field_types,DISCREET_BINS)
-  discreet_fields <<- names(originalDataset)[field_Types_Discreet_Ordinal=="DISCREET"]
+  discreet_fields <- names(originalDataset)[field_Types_Discreet_Ordinal=="DISCREET"]
   
   results<-data.frame(field=names(originalDataset),initial=field_types,types1=field_Types_Discreet_Ordinal)
   print(formattable::formattable(results))
@@ -99,31 +92,22 @@ preprocessing <- function(originalDataset){
   # Transforms all inputs to a logistic model mapped against AttritionYes
   logisticModelTransformAllInputs<-glm(AttritionYes~.,family=binomial(link='logit'),data=normalisedDataset)
   
-  # OPTIONAL Show importance
-  # uses caret library
-  #print(summary(logisticModelTransformAllInputs))
-  
-  # Analyze the table of deviance
-  print("Printing Deviance Analysis:")
-  print(anova(logisticModelTransformAllInputs))
-  
   # Use caret library to determine scaled "importance"
   importance<-as.data.frame(caret::varImp(logisticModelTransformAllInputs, scale = TRUE))
   
-  test1 <<- importance
   leastImportance <- rownames(importance %>% filter(Overall < 0.1))
   
+  print("Removing the following fields as they have an importance rating of less than 0.1")
   print(leastImportance)
   
   normalisedDataset <- select(normalisedDataset, -leastImportance)
   
-  
   # Plot the % importance ordered from lowest to highest
   barplot(t(importance[order(importance$Overall),,drop=FALSE]), las = 2, border = 0, cex.names = 0.8)
   
-  nSubset<- subset(normalisedDataset, select = c(AttritionYes,MonthlyIncome,MonthlyRate,DailyRate,HourlyRate))
-  
   randomisedDataset <- normalisedDataset[sample(nrow(normalisedDataset)),]
+  
+  print("Data Pre-Processing Completed - Dataset Ready For ML Models")
   
   return(randomisedDataset)
 }
