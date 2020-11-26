@@ -86,12 +86,12 @@ cat("\014")
 library(pacman)
 pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
 
-#Load additional R script files provide for this lab
+#Load additional R script files required for this project
 source("employee-attrition_model_functions.R")
 source("employee_attrition_exploration.R")
 source("employee-attrition_preprocessing.R")
 
-#Set the seed for the project, so randomization are consistent between runs.
+#Set the seed for the project, so randomization is consistent between runs.
 set.seed(123)
 
 
@@ -104,7 +104,7 @@ set.seed(123)
 #
 # OUTPUT      :   None
 #
-# Keeps all objects as local to this function
+# Keeps all objects local to this function
 # ************************************************
 main<-function(){
   
@@ -117,32 +117,32 @@ main<-function(){
   #explorationPlots(originalDataset, field_types)
   
   # Pass the dataset into the preprocessing function, which returns a data frame which 
-  #has been processed, normalized and randomised ready for modelling. 
+  # has been processed, normalized and randomised. Ready for modelling. 
   preprocessedDataset <- preprocessing(originalDataset, field_types)
   
   
-  #Return a list containing two data frames, one for training models, and one for testing models.
+  # Return a list containing two data frames, one for training models, and one for testing models.
   holdoutDataset <- createHoldoutDataset(preprocessedDataset, HOLDOUT)
 
-  #Create a stratified data frame ready for stratified k-fold validation
+  # Create a stratified data frame ready for stratified k-fold validation
   stratifiedData <- stratifyDataset(preprocessedDataset,OUTPUT_FIELD,K_FOLDS)
   
     
-  #Uncomment below and run the script to train a MLP model on the training and test data produced using the simple
-  #70//30 split holdout method.
-  #This will return the model accuracy statistics in the Viewer, and also a confusion matrix in the Plots.
+  # Uncomment below and run the script to train a MLP model on the training and test data produced using the simple
+  # 70//30 split holdout method.
+  # This will return the model accuracy statistics in the Viewer, and also a confusion matrix in the Plots.
   
   #mlpWithHoldout <<- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD,plotConf = T)
   
 
-  #Uncomment below to run the MLP Model using Stratified Cross Validation 
-  #This will return accuracy stats in the viewer as well as a confusion matrix in the PLots.
+  # Uncomment below to run the MLP Model using Stratified Cross Validation 
+  # This will return accuracy stats in the viewer as well as a confusion matrix in the PLots.
   
   splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,SAVE_MODELS)
   
   
-  #Uncomment below to create a random decision forest using Stratified Cross Validation
-  #Once again this will return accuracy statistics in the Viewer as well as a Confusion Matrix in the plots.
+  # Uncomment below to create a decision trees using Stratified Cross Validation
+  # Once again this will return accuracy statistics in the Viewer as well as a Confusion Matrix in the plots.
   
   #kfoldTree <- kFoldModel(createForest, stratifiedData, OUTPUT_FIELD, SAVE_MODELS, forestSize = FOREST_SIZE, plot=T)
 
