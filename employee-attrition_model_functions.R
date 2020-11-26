@@ -363,9 +363,9 @@ getTreeClassifications <- function(tree, testDataset, predictorField){
   # We use type=prob here so that we can later find the ideal threshold for the classifier
   predictedClassProbabilities <- predict(tree, inputs, type = "prob")
   
-  processedDTMetrics <- getTreeMetrics(predictedClassProbabilities, testDataset, predictorField)  
+  treeMetrics <- getTreeMetrics(predictedClassProbabilities, testDataset, predictorField)  
   
-  return(processedDTMetrics)
+  return(treeMetrics)
 } #endof getTreeClassifications()
 
 # ************************************************
@@ -383,7 +383,7 @@ getTreeClassifications <- function(tree, testDataset, predictorField){
 getTreeRules<-function(tree, print = F){
   #library(tidyrules) is already imported in the main script file
   
-  # extract rules into a data frame using tidyRules
+  # extract rules into a data frame using tidyRules and make text format more friendly
   rules <- as.data.frame(tidyRules(tree))
   for (i in 1:nrow(rules)) {
     rules[i, 2] <- str_replace_all(rules[i, 2], "%in%", "is")
