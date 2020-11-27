@@ -14,45 +14,48 @@
 # OUTPUT : results - List - A list containing the accuracy measurements of the model.
 #
 # ************************************************
-train_MLP_Model <- function(train, test, outputField, plotConf = FALSE){
+train_MLP_Model <- function(train, test, outputField, i, save_model = F, plotConf = FALSE){
   
-
-  #Remove the class field from the training data and convert to a matrix as 
-  #required by the model.
-  trainingData <- as.matrix(train[-(which(names(train)==outputField))])
+  if (save_model == T) {
   
-  
-  #Create a list containing the expected outputs for the classifier 
-  #and convert them to categorical, also required by the model.
-  expectedOutput <- to_categorical(train[,(which(names(train)==outputField))])
-
-  
-  #Create the model classifier, ready for layers and parameters to be added.
-  model_Classifier <- keras_model_sequential()
-  
-  #Create and add layers to the model. Must used keras pipeline operator '%>%'
-  model_Classifier %>%
+    #Remove the class field from the training data and convert to a matrix as 
+    #required by the model.
+    trainingData <- as.matrix(train[-(which(names(train)==outputField))])
+    
+    
+    #Create a list containing the expected outputs for the classifier 
+    #and convert them to categorical, also required by the model.
+    expectedOutput <- to_categorical(train[,(which(names(train)==outputField))])
+    
+    
+    #Create the model classifier, ready for layers and parameters to be added.
+    model_Classifier <- keras_model_sequential()
+    
+    #Create and add layers to the model. Must used keras pipeline operator '%>%'
+    model_Classifier %>%
     #First layer must have input dimensions of the dataset, so number of columns
     layer_dense(input_shape = ncol(trainingData), units = NN_HIDDEN_RELU, activation = "relu") %>%
     #Dropout layer, this helps to prevent over-fitting the model.
     layer_dropout(NN_DROPOUT) %>%
+    layer_dense(units = NN_HIDDEN_RELU, activation = "relu") %>%
+    layer_dropout(NN_DROPOUT) %>%
     layer_dense(units = NN_HIDDEN_SIGMOID, activation = "sigmoid") %>%
     layer_dense(units = 2, activation = "softmax")
-  
-  #Print model summary
-  summary(model_Classifier)
-
-  
-  #Must now add a loss function and an optimizer to the model
-  model_Classifier %>%
+    
+    #Print model summary
+    summary(model_Classifier)
+    
+    
+    #Must now add a loss function and an optimizer to the model
+    model_Classifier %>%
     compile(
       loss = "binary_crossentropy",
       optimizer = NN_OPTIMISER,
       metrics = "accuracy"
     )
-  
-  #Fit the model
-  model_Classifier %>%
+    
+    #Fit the model
+    model_Classifier %>%
     fit(
       x = trainingData,
       y = expectedOutput,
@@ -60,10 +63,18 @@ train_MLP_Model <- function(train, test, outputField, plotConf = FALSE){
       batch_size = NN_BATCH_SIZE,
       validation_split = 0.2
     )
+    
+    model_Classifier %>% save_model_tf(paste("MLP_Model_", i))
+  }
+  
+  else {
+    model_Classifier <- load_model_tf(paste("MLP_Model_", i))
+  }
   
   #Assign the results of the model tested on the test dataset.
   results <- test_MLP_Model(test,outputField,model_Classifier)
-
+  
+  
   if (plotConf==TRUE)
     plotConfusionMatrix(results, "MLP Model Confusion Matrix")
   
@@ -578,19 +589,30 @@ getNegativeImportance <- function(tree) {
 #         :   Data Frame     - measures  - performance metrics
 #
 # ************************************************
-createForest<-function(train,test,predictorField,forestSize,title = "Importance for Random Forest",plot=TRUE){
+createForest<-function(train,test,predictorField,i,save_model,forestSize,title = "Importance for Random Forest",plot=TRUE){
   
-  # Need to produce a data frame from the predictor fields and a vector for the output
-  outputClassIndex <- which(names(train) == predictorField)
-  inputs <- train[-outputClassIndex]
-  output <- train[, outputClassIndex]
+  if (save_model == TRUE) {
+    
+    # Need to produce a data frame from the predictor fields and a vector for the output
+    outputClassIndex <- which(names(train) == predictorField)
+    inputs <- train[-outputClassIndex]
+    output <- train[, outputClassIndex]
+    
+    #does it need factor(expected)
+    rf<-randomForest::randomForest(inputs,
+                                   factor(output),
+                                   ntree=forestSize,
+                                   importance=TRUE,
+                                   mtry=sqrt(ncol(inputs)))
+    
+    saveRDS(rf, paste0("Tree_Models/_rf_", i, ".rds"))
+  }
   
-  #does it need factor(expected)
-  rf<-randomForest::randomForest(inputs,
-                                 factor(output),
-                                 ntree=forestSize,
-                                 importance=TRUE,
-                                 mtry=sqrt(ncol(inputs)))
+  else {
+    rf <- readRDS(paste0("Tree_Models/_rf_", i, ".rds"))
+    
+  }
+  
   
   
   # ************************************************
@@ -681,7 +703,7 @@ getTreeMetrics <- function(treeClassifications, testDataset, predictorField, cla
 # OUTPUT : None
 # ************************************************
 
-#Not finish, see comment below.
+
 kFoldModel <- function(FUN,dataset,outputField,...){
   
   results <- data.frame()
@@ -691,21 +713,14 @@ kFoldModel <- function(FUN,dataset,outputField,...){
     separatedData<-kFoldTrainingSplit(dataset,i)
     
     modelMeasures<-FUN(train=separatedData$train,
-                       test=separatedData$test,outputField,...)
+                       test=separatedData$test,outputField,i,...)
     results <- rbind(results, modelMeasures)
     
   }
   
   resultMeans<-colMeans(results)
   resultMeans[1:4]<-as.integer(resultMeans[1:4])
-  # 
-  # if(deparse(substitute(FUN)) == "train_MLP_Model"){
-  #   plotConfusionMatrix(as.list(resultMeans), "MLP Model Confusion Matrix")
-  # } else {
-  #   plotConfusionMatrix(as.list(resultMeans), "Decision Trees Confusion Matrix")
-  # }
-  #Need to return the averages of the rows in results.
-  
+
   
   if (deparse(substitute(FUN)) == "train_MLP_Model"){
     plotConfusionMatrix(as.list(resultMeans), "MLP Model Stratified Cross Validation Confusion Matrix")

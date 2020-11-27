@@ -19,14 +19,15 @@ CUTOFF            <- 0.90                 # Correlation cutoff
 HOLDOUT           <- 70                   # Holdout percentage for training set                  
 FREQCUT           <- 99/1                 # To remove zero variance fields
 FOREST_SIZE       <- 1000                 # Number of trees in the forest
+SAVE_MODELS       <- TRUE
 
-NN_BATCH_SIZE     <- 30                   # Batch size for MLP Model Fitting
+NN_BATCH_SIZE     <- 15                   # Batch size for MLP Model Fitting
 NN_OPTIMISER      <- "adam"               # Name of the optimization algorithm used for MLP Model Fitting
 NN_DROPOUT        <- 0.1                  # 10% Dropout for the MLP Model
 NN_HIDDEN_RELU    <- 16                   # Number of neurons for the MLP Dense Layer with Relu Activation 
 NN_HIDDEN_SIGMOID <- 1                    # Number of neurons for the MLP Dense Layer with Sigmoid Activation 
 NN_EPOCHS         <- 100                  # Maximum number of training epochs for MLP Model Fitting
-K_FOLDS           <- 20                   # Number of holds for stratified cross validation
+K_FOLDS           <- 8                   # Number of holds for stratified cross validation
 
 
 # Define and then load the libraries used in this project
@@ -113,7 +114,7 @@ main<-function(){
   # Determine if fields are SYMBOLIC or NUMERIC
   field_types<-FieldTypes(originalDataset)
   
-  explorationPlots(originalDataset, field_types)
+  #explorationPlots(originalDataset, field_types)
   
   # Pass the dataset into the preprocessing function, which returns a data frame which 
   #has been processed, normalized and randomised ready for modelling. 
@@ -131,19 +132,19 @@ main<-function(){
   #70//30 split holdout method.
   #This will return the model accuracy statistics in the Viewer, and also a confusion matrix in the Plots.
   
-  #mlpWithHoldout <- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD,plotConf = T)
+  #mlpWithHoldout <<- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD,plotConf = T)
   
 
   #Uncomment below to run the MLP Model using Stratified Cross Validation 
   #This will return accuracy stats in the viewer as well as a confusion matrix in the PLots.
   
-  #splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD)
+  splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,SAVE_MODELS)
   
   
   #Uncomment below to create a random decision forest using Stratified Cross Validation
   #Once again this will return accuracy statistics in the Viewer as well as a Confusion Matrix in the plots.
   
-  #kfoldTree <- kFoldModel(createForest, stratifiedData, OUTPUT_FIELD, forestSize = FOREST_SIZE, plot=T)
+  #kfoldTree <- kFoldModel(createForest, stratifiedData, OUTPUT_FIELD, SAVE_MODELS, forestSize = FOREST_SIZE, plot=T)
 
 
   
