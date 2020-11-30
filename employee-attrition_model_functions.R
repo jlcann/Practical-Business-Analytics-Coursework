@@ -363,9 +363,7 @@ getTreeClassifications <- function(tree, testDataset, predictorField){
   # We use type=prob here so that we can later find the ideal threshold for the classifier
   predictedClassProbabilities <- predict(tree, inputs, type = "prob")
   
-  treeMetrics <- getTreeMetrics(predictedClassProbabilities, testDataset, predictorField)  
-  
-  return(treeMetrics)
+  return(predictedClassProbabilities)
 } #endof getTreeClassifications()
 
 # ************************************************
@@ -390,6 +388,7 @@ getTreeRules<-function(tree, print = F){
     rules[i, 2] <- gsub("c(", "", rules[i, 2], fixed = T)
     rules[i, 2] <- gsub(")", "", rules[i, 2], fixed = T)
     rules[i, 2] <- str_replace_all(rules[i, 2], ",", " OR")
+    rules[i, 2] <- str_replace_all(rules[i, 2], "&", "AND")
   }
   
   # Use more descriptive column names and drop undesired columns
@@ -514,7 +513,7 @@ plotThresholdGraph <- function(toPlot,
 # ************************************************
 # createDT() :
 #
-# Creates A C5 Decision Tree from training data
+# Creates a C5 Decision Tree from training data
 #
 # INPUT   :
 #             Data Frame     - train                 - train dataset
@@ -526,12 +525,57 @@ plotThresholdGraph <- function(toPlot,
 #
 # ************************************************
 createDT <- function(train, test, predictorField, title = "Importance for Decision Tree", plot = F) {
+    
   # Need to produce a data frame from the predictor fields and a vector for the output
   outputClassIndex <- which(names(train) == predictorField)
-  inputs <- train[, -outputClassIndex]
+  inputs <- train[-outputClassIndex]
   output <- train[, outputClassIndex]
+    
+  tree <- C50::C5.0(x=inputs, y=factor(output), rules=T, trials=1)
   
-  tree<-C50::C5.0(x=inputs, y=factor(output), rules=T, trials=1)
+  if (plot){    
+    # Get importance of the input fields
+    importance<-C50::C5imp(tree, metric = "usage")
+    names(importance)<-"Weight"
+    importance<-importance[order(importance$Weight,decreasing=TRUE),,drop=FALSE]    
+    print(formattable::formattable(importance))    
+    # Plot the importance fields
+    barplot(t(importance),las=2,
+            border = 0, cex.names =0.7,
+            main=title)    
+  }
+  
+  return(tree)
+} #endof createDT()
+
+# ************************************************
+# createAndEvaluateDT() :
+#
+# Creates and evaluates a C5 Decision Tree from training data
+#
+# INPUT   :
+#             Data Frame     - train                 - train dataset
+#             charatcter     - predictorField        - the name of the predictor field in the dataset
+#             boolean        - plot                  - if true, also plots tree rules
+#
+# OUTPUT
+#         :   object     - tree    -  a new trained decision tree
+#
+# ************************************************
+createAndEvaluateDT <- function(train, test, predictorField, i, save_model, title = "Importance for Decision Tree", classLabelChar = NULL, plot = F) {
+
+  if (save_model == TRUE) {
+    
+    tree <- createDT(train, test, predictorField, title, plot=plot)
+    
+    if (!dir.exists("Tree_Models")) {
+      dir.create("Tree_Models")
+    }
+    
+    saveRDS(tree, paste0("Tree_Models/_dt_", i, ".rds"))
+  } else {
+    tree <- readRDS(paste0("Tree_Models/_dt_", i, ".rds"))
+  }
   
   
   if (plot){    
@@ -547,9 +591,46 @@ createDT <- function(train, test, predictorField, title = "Importance for Decisi
   }
   
   treeClassifications <- getTreeClassifications(tree, test, predictorField)
-  treeRules <-getTreeRules(tree,T)
-  return(treeClassifications)
-} #endof createDT()
+  treeMetrics <- getTreeMetrics(treeClassifications, test, predictorField, classLabelChar = classLabelChar)
+  
+  # Only print out the rules for the tree generated from the first fold
+  treeRules <-getTreeRules(tree,ifelse(i == 1, T, F))
+  
+  return(treeMetrics)
+} #endof createAndEvaluateDT()
+
+
+# ************************************************
+# createAndEvaluateHoldoutTree() :
+#
+# Creates and evaluates a C5 Decision Tree from training data
+#
+# INPUT   :
+#             Data Frame     - train                 - train dataset
+#             Data Frame     - test                  - test dataset
+#             charatcter     - predictorField        - the name of the predictor field in the dataset
+#             characrer      - title                 - the title given to the metrics output
+#             character      - classLabelChar        - the class label to predict (default = NULL)
+#             double         - classLabel            - the class label to predict (default = 1)
+#             boolean        - plot                  - if true, also plots tree rules
+#
+# OUTPUT
+#         :   object     - tree    -  a new trained decision tree
+#
+# ************************************************
+createAndEvaluateHoldoutTree <- function(train, test, predictorField, title, classLabelChar = NULL, classLabel = 1, plot = T) {
+
+  tree <- createDT(train, test, predictorField, plot)
+  treeRules <- getTreeRules(tree, plot)
+  treeClassifications <- getTreeClassifications(tree, test, predictorField)
+  treeMetrics <- getTreeMetrics(treeClassifications, test, predictorField, classLabel, classLabelChar)
+  treeMetricsView <- as.data.frame(as.matrix(treeMetrics))
+  colnames(treeMetricsView) <- title
+  print(formattable::formattable(treeMetricsView))
+  
+  return (tree)
+} #endof createAndEvaluateHoldoutTree()
+
 
 # ************************************************
 # getNegativeImportance() :
@@ -575,10 +656,11 @@ getNegativeImportance <- function(tree) {
 }
 
 
+  
 # ************************************************
-# createForest() :
+# createAndEvaluateForest() :
 #
-# Create Random Forest on pre-processed dataset
+# Creates Random Forest on a dataset and evaluates it
 #
 # INPUT   :
 #         :   Data Frame     - train       - train dataset
@@ -589,58 +671,70 @@ getNegativeImportance <- function(tree) {
 #         :   Data Frame     - measures  - performance metrics
 #
 # ************************************************
-createForest<-function(train,test,predictorField,i,save_model,forestSize,title = "Importance for Random Forest",plot=TRUE){
-  
-  if (save_model == TRUE) {
+createForest<-function(train,test,predictorField,forestSize,title = "Importance for Random Forest",plot=TRUE) {
     
     # Need to produce a data frame from the predictor fields and a vector for the output
     outputClassIndex <- which(names(train) == predictorField)
     inputs <- train[-outputClassIndex]
     output <- train[, outputClassIndex]
     
-    #does it need factor(expected)
     rf<-randomForest::randomForest(inputs,
                                    factor(output),
                                    ntree=forestSize,
                                    importance=TRUE,
                                    mtry=sqrt(ncol(inputs)))
     
+    if (plot){
+      # Get importance of the input fields
+      importance<-randomForest::importance(rf,scale=TRUE,type=1)
+      importance<-importance[order(importance,decreasing=TRUE),,drop=FALSE]
+      
+      colnames(importance)<-"Weight"
+      
+      barplot(t(importance),las=2, border = 0,
+              cex.names =0.7,
+              main=title)
+      
+      print(formattable::formattable(data.frame(importance)))
+    }
+    
+    return(rf)
+  }
+  
+# ************************************************
+# createAndEvaluateForest() :
+#
+# Creates Random Forest on a dataset and evaluates it
+#
+# INPUT   :
+#         :   Data Frame     - train       - train dataset
+#             Data Frame     - test        - test dataset
+#             boolean        - plot        - TRUE = output charts/results
+#
+# OUTPUT  :
+#         :   Data Frame     - measures  - performance metrics
+#
+# ************************************************
+createAndEvaluateForest<-function(train,test,predictorField,i,save_model,forestSize,title = "Importance for Random Forest",plot=TRUE){
+  
+  if (save_model == TRUE) {
+    
+    rf <- createForest(train, test, predictorField, forestSize, title, plot=plot)
+    
+    if (!dir.exists("Tree_Models")) {
+      dir.create("Tree_Models")
+    }
+    
     saveRDS(rf, paste0("Tree_Models/_rf_", i, ".rds"))
-  }
-  
-  else {
+  } else {
     rf <- readRDS(paste0("Tree_Models/_rf_", i, ".rds"))
-    
-  }
-  
-  
-  
-  # ************************************************
-  # # Use the created decision tree with the test dataset
-  # measures<-getTreeClassifications(tree = rf,
-  #                                  testDataset = 
-  #                                  predictorField = predictorField,
-  #                                  title=myTitle,
-  #                                  plot=plot)
-  
-  if (plot==TRUE){
-    # Get importance of the input fields
-    importance<-randomForest::importance(rf,scale=TRUE,type=1)
-    importance<-importance[order(importance,decreasing=TRUE),,drop=FALSE]
-    
-    colnames(importance)<-"Strength"
-    
-    barplot(t(importance),las=2, border = 0,
-            cex.names =0.7,
-            main=title)
-    
-    print(formattable::formattable(data.frame(importance)))
   }
   
   treeClassifications <- getTreeClassifications(rf, test, predictorField)
+  treeMetrics <- getTreeMetrics(treeClassifications, test, predictorField)
   
-  return(treeClassifications)
-} #endof createForest()
+  return(treeMetrics)
+} #endof createAndEvaluateForest()
 
 # ************************************************
 # getTreeMetrics() :
@@ -725,19 +819,19 @@ kFoldModel <- function(FUN,dataset,outputField,...){
   if (deparse(substitute(FUN)) == "train_MLP_Model"){
     plotConfusionMatrix(as.list(resultMeans), "MLP Model Stratified Cross Validation Confusion Matrix")
     confRes <- as.data.frame(as.matrix(resultMeans))
-    colnames(confRes) <- "MLP Stratified Cross Validation Accuracy"
+    colnames(confRes) <- "MLP Stratified Cross Validation Measures"
     print(formattable::formattable(round(confRes, 2)))
   }
-  if (deparse(substitute(FUN)) == "createDT") {
+  if (deparse(substitute(FUN)) == "createAndEvaluateDT") {
     plotConfusionMatrix(as.list(resultMeans), "Decision Tree Stratified Cross Validation Confusion Matrix")
     confRes <- as.data.frame(as.matrix(resultMeans))
-    colnames(confRes) <- ("Decusion Tree Stratified Cross Validation Accuracy")
+    colnames(confRes) <- ("Decision Tree Stratified Cross Validation Measures")
     print(formattable::formattable(round(confRes, 2)))
   }
-  if (deparse(substitute(FUN)) == "createForest"){
+  if (deparse(substitute(FUN)) == "createAndEvaluateForest"){
     plotConfusionMatrix(as.list(resultMeans), "Forest Stratified Cross Validation Confusion Matrix")
     confRes <- as.data.frame(as.matrix(resultMeans))
-    colnames(confRes) <- "Random Forest Stratified Cross Validation Accuracy"
+    colnames(confRes) <- "Random Forest Stratified Cross Validation Measures"
     print(formattable::formattable(round(confRes, 2))) 
   }
   

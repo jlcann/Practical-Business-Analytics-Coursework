@@ -27,7 +27,7 @@ NN_DROPOUT        <- 0.1                  # 10% Dropout for the MLP Model
 NN_HIDDEN_RELU    <- 16                   # Number of neurons for the MLP Dense Layer with Relu Activation 
 NN_HIDDEN_SIGMOID <- 1                    # Number of neurons for the MLP Dense Layer with Sigmoid Activation 
 NN_EPOCHS         <- 100                  # Maximum number of training epochs for MLP Model Fitting
-K_FOLDS           <- 8                   # Number of holds for stratified cross validation
+K_FOLDS           <- 8                    # Number of holds for stratified cross validation
 
 
 # Define and then load the libraries used in this project
@@ -118,70 +118,67 @@ main<-function(){
   
   # Pass the dataset into the preprocessing function, which returns a data frame which 
   # has been processed, normalized and randomised. Ready for modelling. 
-  preprocessedDataset <- preprocessing(originalDataset, field_types)
+  processedDataset <- preprocessing(originalDataset, field_types)
   
   
   # Return a list containing two data frames, one for training models, and one for testing models.
-  holdoutDataset <- createHoldoutDataset(preprocessedDataset, HOLDOUT)
+  holdoutDataset <- createHoldoutDataset(processedDataset, HOLDOUT)
 
   # Create a stratified data frame ready for stratified k-fold validation
-  stratifiedData <- stratifyDataset(preprocessedDataset,OUTPUT_FIELD,K_FOLDS)
+  stratifiedData <- stratifyDataset(processedDataset,OUTPUT_FIELD,K_FOLDS)
   
     
   # Uncomment below and run the script to train a MLP model on the training and test data produced using the simple
   # 70//30 split holdout method.
   # This will return the model accuracy statistics in the Viewer, and also a confusion matrix in the Plots.
   
-  #mlpWithHoldout <<- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD,plotConf = T)
+  #mlpWithHoldout <- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD,plotConf = T)
   
 
   # Uncomment below to run the MLP Model using Stratified Cross Validation 
   # This will return accuracy stats in the viewer as well as a confusion matrix in the PLots.
   
-  splitModelMeans <<- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,SAVE_MODELS)
+  #splitModelMeans <- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,SAVE_MODELS)
   
   
-  # Uncomment below to create a decision trees using Stratified Cross Validation
+  # Uncomment below to create a decision trees and random forests using Stratified Cross Validation
   # Once again this will return accuracy statistics in the Viewer as well as a Confusion Matrix in the plots.
   
-  #kfoldTree <- kFoldModel(createForest, stratifiedData, OUTPUT_FIELD, SAVE_MODELS, forestSize = FOREST_SIZE, plot=T)
-
-
-  
-  #randomisedRawDataset <- originalDataset[sample(nrow(originalDataset)),]
-  
-  # The decision tree cannot be made if there are fields where each record has the same value, take these out
-   
-  # randomisedRawDatasetWithoutConstantFields = select(randomisedRawDataset, -c("Over18", "EmployeeCount"))
-  
-  # rawTrainingSet <- randomisedRawDatasetWithoutConstantFields[1:trainingSampleSize,]
-  
-  # rawTestSet <- randomisedRawDatasetWithoutConstantFields[-(1:trainingSampleSize),]
-  
-  # rawDT <- createDT(rawTrainingSet, rawTestSet, ORIGINAL_OUTPUT_FIELD)
+  #kfoldForest <- kFoldModel(createAndEvaluateForest, stratifiedData, OUTPUT_FIELD, SAVE_MODELS, forestSize = FOREST_SIZE, plot=F)
+  #kfoldTree <- kFoldModel(createAndEvaluateDT, stratifiedData, OUTPUT_FIELD, SAVE_MODELS, plot=F)
 
   
-  # Print the rules for the trees
-  #kfoldTreeRules <<- getTreeRules(kfoldTree, T)
+  # The problem with using a random forest, is that you cannot pull rules from the models
+  # Uncomment below to create a single decision tree using the holdout method, printing the rules for the tree and the measures
   
-  # rawDTRules <<- getTreeRules(rawDT, T)
-
-   
-
-  #processedForest <- createForest(trainingSet,OUTPUT_FIELD,FOREST_SIZE)
-
-  #negativeImp<-getNegativeImportance(processedForest)
-  
-  #newDatasetForForest = select(stratifiedData, -negativeImp)
-  
-  #ReCreate the training Set
-  
-  #trainingSetForest <- newDatasetForForest[1:trainingSampleSize,]
-  
-  #reProcessedForest <<- createForest(trainingSetForest,OUTPUT_FIELD,FOREST_SIZE)
+  # holdoutTree <- createAndEvaluateHoldoutTree(holdoutDataset$training,
+  #                                             holdoutDataset$test,
+  #                                             OUTPUT_FIELD,
+  #                                             "Decision Tree Holdout Measures",
+  #                                             plot = T)
   
   
+  # The holdout tree formed from the processed dataset produces rules that were derived from normalised data
+  # It would be better if "de-normalise" the values in these rules. Alternatively, as decision trees are known
+  # to work well without preprocessing, create a decision tree on a preprocessed dataset
+  # This will require recreating a new holdout dataset with little procesing applied to it
+  # Uncomment below to create a single decision tree using the holdout method, printing the rules for the tree and the measures
   
+  # For whataver reason, the C5 decision tree cannot be created if the Over18 column is present
+  # It has nothing to do with the values in the column, and also nothing to do with the name of the column
+  rawDataset = select(originalDataset, -"Over18")
+  
+  rawHoldoutDataset <- rawDataset[sample(nrow(rawDataset)),]
+  rawHoldoutDataset <- createHoldoutDataset(rawHoldoutDataset, HOLDOUT)
+  rawHoldoutTree <- createAndEvaluateHoldoutTree(rawHoldoutDataset$training,
+                                                 rawHoldoutDataset$test,
+                                                 ORIGINAL_OUTPUT_FIELD,
+                                                 "Decision Tree Holdout Measures From Preprocessed Dataset",
+                                                 classLabelChar = 'Yes',
+                                                 plot = T)
+  
+  rawStratifiedDataset <- stratifyDataset(rawDataset, ORIGINAL_OUTPUT_FIELD, K_FOLDS)
+  kfoldRawTree <- kFoldModel(createAndEvaluateDT, rawStratifiedDataset, ORIGINAL_OUTPUT_FIELD, SAVE_MODELS, classLabelChar = "Yes", plot=F)
 }
 
 # Run the main function.
