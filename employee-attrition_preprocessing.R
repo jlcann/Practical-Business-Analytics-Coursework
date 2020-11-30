@@ -406,7 +406,7 @@ discretiseFields <-function(dataset, fields){
 #*************************************************
 
 createHoldoutDataset <-function(dataset, holdout){
-  trainingSampleSize <- round(nrow(dataset))*(HOLDOUT/100)
+  trainingSampleSize <- round(nrow(dataset))*(holdout/100)
   
   #Create the training Set
   trainingSet <- dataset[1:trainingSampleSize,]
