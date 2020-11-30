@@ -562,7 +562,7 @@ createDT <- function(train, test, predictorField, title = "Importance for Decisi
 #         :   object     - tree    -  a new trained decision tree
 #
 # ************************************************
-createAndEvaluateDT <- function(train, test, predictorField, i, save_model, title = "Importance for Decision Tree", classLabelChar = NULL, plot = F) {
+createAndEvaluateDT <- function(train, test, predictorField, i, save_model, title = "Importance for Decision Tree", classLabelChar = NULL, fileName = "_dt_", plot = F) {
 
   if (save_model == TRUE) {
     
@@ -572,9 +572,9 @@ createAndEvaluateDT <- function(train, test, predictorField, i, save_model, titl
       dir.create("Tree_Models")
     }
     
-    saveRDS(tree, paste0("Tree_Models/_dt_", i, ".rds"))
+    saveRDS(tree, paste0("Tree_Models/", fileName, i, ".rds"))
   } else {
-    tree <- readRDS(paste0("Tree_Models/_dt_", i, ".rds"))
+    tree <- readRDS(paste0("Tree_Models/", fileName, i, ".rds"))
   }
   
   

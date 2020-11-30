@@ -163,7 +163,7 @@ main<-function(){
   # It has nothing to do with the values in the column, and also nothing to do with the name of the column
   #rawDataset = select(originalDataset, -"Over18")
   #rawStratifiedDataset <- stratifyDataset(rawDataset, ORIGINAL_OUTPUT_FIELD, K_FOLDS)
-  #kfoldRawTree <- kFoldModel(createAndEvaluateDT, rawStratifiedDataset, ORIGINAL_OUTPUT_FIELD, SAVE_MODELS, classLabelChar = "Yes", plot=F)
+  #kfoldRawTree <- kFoldModel(createAndEvaluateDT, rawStratifiedDataset, ORIGINAL_OUTPUT_FIELD, SAVE_MODELS, classLabelChar = "Yes", fileName = "_rdt_", plot=F)
 }
 
 # Run the main function.
