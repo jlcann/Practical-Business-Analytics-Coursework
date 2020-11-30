@@ -64,11 +64,11 @@ train_MLP_Model <- function(train, test, outputField, i, save_model = F, plotCon
       validation_split = 0.2
     )
     
-    model_Classifier %>% save_model_tf(paste("MLP_Model_", i))
+    model_Classifier %>% save_model_tf(paste0("MLP_Model_", i))
   }
   
   else {
-    model_Classifier <- load_model_tf(paste("MLP_Model_", i))
+    model_Classifier <- load_model_tf(paste0("MLP_Model_", i))
   }
   
   #Assign the results of the model tested on the test dataset.
