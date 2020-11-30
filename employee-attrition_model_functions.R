@@ -1,3 +1,17 @@
+#*
+#* List of functions in this file:
+#*
+#* train_MLP_Model()
+#* 
+#* test_MLP_Model()
+#* 
+#* calculateThreshold()-->Function taken from Prof. Nick Ryman-Tubb
+#*                        lab session 4.
+
+
+
+
+
 # ************************************************
 # train_MLP_Model()
 #
@@ -14,9 +28,9 @@
 # OUTPUT : results - List - A list containing the accuracy measurements of the model.
 #
 # ************************************************
-train_MLP_Model <- function(train, test, outputField, i, save_model = F, plotConf = FALSE){
+train_MLP_Model <- function(train, test, outputField, i, load, plot = TRUE){
   
-  if (save_model == T) {
+  if (load == FALSE) {
   
     #Remove the class field from the training data and convert to a matrix as 
     #required by the model.
@@ -34,10 +48,11 @@ train_MLP_Model <- function(train, test, outputField, i, save_model = F, plotCon
     #Create and add layers to the model. Must used keras pipeline operator '%>%'
     model_Classifier %>%
     #First layer must have input dimensions of the dataset, so number of columns
-    layer_dense(input_shape = ncol(trainingData), units = NN_HIDDEN_RELU, activation = "relu") %>%
+    layer_dense(input_shape = ncol(trainingData), units = ncol(trainingData), activation = "relu") %>%
     #Dropout layer, this helps to prevent over-fitting the model.
     layer_dropout(NN_DROPOUT) %>%
-    layer_dense(units = NN_HIDDEN_RELU, activation = "relu") %>%
+    layer_dense(input_shape = ncol(trainingData), units = NN_HIDDEN_RELU, activation = "relu") %>%
+      #Dropout layer, this helps to prevent over-fitting the model.
     layer_dropout(NN_DROPOUT) %>%
     layer_dense(units = NN_HIDDEN_SIGMOID, activation = "sigmoid") %>%
     layer_dense(units = 2, activation = "softmax")
@@ -72,10 +87,10 @@ train_MLP_Model <- function(train, test, outputField, i, save_model = F, plotCon
   }
   
   #Assign the results of the model tested on the test dataset.
-  results <- test_MLP_Model(test,outputField,model_Classifier)
+  results <- test_MLP_Model(test,outputField,model_Classifier,plot)
   
   
-  if (plotConf==TRUE)
+  if (plot==TRUE)
     plotConfusionMatrix(results, "MLP Model Confusion Matrix")
   
   #return the stats of the tested model.
@@ -98,7 +113,7 @@ train_MLP_Model <- function(train, test, outputField, i, save_model = F, plotCon
 #
 # ************************************************
 
-test_MLP_Model<-function(testData,outputField,mlp_model){
+test_MLP_Model<-function(testData,outputField,mlp_model,plot){
   
   title = "MLP Model"
   #Remove the class field from the training data and convert to a matrix as 
@@ -114,7 +129,7 @@ test_MLP_Model<-function(testData,outputField,mlp_model){
   
   #Return the results model with the best threshold determined.
   #TestPredicted Col 2 is Yes to Attrition Yes, meaning person will leave job.
-  results <- calculateThreshold(testPredicted[,2],expectedTestOutput,title)
+  results <- calculateThreshold(testPredicted[,2],expectedTestOutput,title,plot)
   
   return(results)
   
@@ -589,9 +604,9 @@ getNegativeImportance <- function(tree) {
 #         :   Data Frame     - measures  - performance metrics
 #
 # ************************************************
-createForest<-function(train,test,predictorField,i,save_model,forestSize,title = "Importance for Random Forest",plot=TRUE){
+createForest<-function(train,test,predictorField,i,load ,forestSize,title = "Importance for Random Forest",plot=TRUE){
   
-  if (save_model == TRUE) {
+  if (load == FALSE) {
     
     # Need to produce a data frame from the predictor fields and a vector for the output
     outputClassIndex <- which(names(train) == predictorField)
@@ -622,9 +637,11 @@ createForest<-function(train,test,predictorField,i,save_model,forestSize,title =
   #                                  predictorField = predictorField,
   #                                  title=myTitle,
   #                                  plot=plot)
+  treeClassifications <- getTreeClassifications(rf, test, predictorField)
   
   if (plot==TRUE){
     # Get importance of the input fields
+    
     importance<-randomForest::importance(rf,scale=TRUE,type=1)
     importance<-importance[order(importance,decreasing=TRUE),,drop=FALSE]
     
@@ -635,9 +652,12 @@ createForest<-function(train,test,predictorField,i,save_model,forestSize,title =
             main=title)
     
     print(formattable::formattable(data.frame(importance)))
+    
+    plotConfusionMatrix(treeClassifications, "Forest With Holdout")
   }
   
-  treeClassifications <- getTreeClassifications(rf, test, predictorField)
+  
+  
   
   return(treeClassifications)
 } #endof createForest()

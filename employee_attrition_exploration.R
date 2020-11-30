@@ -317,3 +317,9 @@ explorationPlots <-function(originalDataset, field_types) {
   print("End of Data Exploration")
   
 }
+
+
+dataExploration <- function(dataset){
+  field_types<-FieldTypes(dataset)
+  allPlots <- explorationPlots(dataset, field_types)
+}
