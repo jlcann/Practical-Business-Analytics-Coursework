@@ -601,38 +601,6 @@ createAndEvaluateDT <- function(train, test, predictorField, i, save_model, titl
 
 
 # ************************************************
-# createAndEvaluateHoldoutTree() :
-#
-# Creates and evaluates a C5 Decision Tree from training data
-#
-# INPUT   :
-#             Data Frame     - train                 - train dataset
-#             Data Frame     - test                  - test dataset
-#             charatcter     - predictorField        - the name of the predictor field in the dataset
-#             characrer      - title                 - the title given to the metrics output
-#             character      - classLabelChar        - the class label to predict (default = NULL)
-#             double         - classLabel            - the class label to predict (default = 1)
-#             boolean        - plot                  - if true, also plots tree rules
-#
-# OUTPUT
-#         :   object     - tree    -  a new trained decision tree
-#
-# ************************************************
-createAndEvaluateHoldoutTree <- function(train, test, predictorField, title, classLabelChar = NULL, classLabel = 1, plot = T) {
-
-  tree <- createDT(train, test, predictorField, plot)
-  treeRules <- getTreeRules(tree, plot)
-  treeClassifications <- getTreeClassifications(tree, test, predictorField)
-  treeMetrics <- getTreeMetrics(treeClassifications, test, predictorField, classLabel, classLabelChar)
-  treeMetricsView <- as.data.frame(as.matrix(treeMetrics))
-  colnames(treeMetricsView) <- title
-  print(formattable::formattable(treeMetricsView))
-  
-  return (tree)
-} #endof createAndEvaluateHoldoutTree()
-
-
-# ************************************************
 # getNegativeImportance() :
 #
 # Create Random Forest on pre-processed dataset
