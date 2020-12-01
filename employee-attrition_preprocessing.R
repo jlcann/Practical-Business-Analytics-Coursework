@@ -1,3 +1,33 @@
+#*
+#*List of functions in this file:
+#*
+#*preprocessing()
+#*
+#*
+#*oneHotEncoding()
+#*
+#*
+#*normalise()
+#*
+#*NPREPROCESSING_discreetNumeric()--> Function taken from Prof. Nick Ryman-Tubb
+#*                                    lab session 4.   
+#*
+#*NPREPROCESSING_outlier()----------> Function taken from Prof. Nick Ryman-Tubb
+#*                                    lab session 4.
+#*
+#*NplotOutliers()-------------------> Function taken from Prof. Nick Ryman-Tubb
+#*                                    lab session 4.
+#*                                    
+#*stratifyDataset()
+#*
+#*
+#*discretiseFields()
+#*
+#*createHoldoutDataset()
+#*
+#*
+#*checkforOutliers()
+
 # To manually set a field type
 # This will store $name=field name, $type=field type
 manualTypes <- data.frame()
@@ -15,6 +45,8 @@ manualTypes <- data.frame()
 preprocessing <- function(originalDataset, field_types){
   
   print("Starting Data Pre-Processing Stage")
+  
+  field_types<-FieldTypes(originalDataset)
   
   # Check for NA fields in original dataset
   print("Checking fields for missing data. Number of missing data in each field:")
