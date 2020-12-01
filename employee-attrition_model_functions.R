@@ -1,12 +1,52 @@
 #*
 #* List of functions in this file:
 #*
-#* train_MLP_Model()
+#* train_MLP_Model() 
 #* 
-#* test_MLP_Model()
+#* test_MLP_Model()  
 #* 
-#* calculateThreshold()-->Function taken from Prof. Nick Ryman-Tubb
+#* calculateThreshold()----->Function taken from Prof. Nick Ryman-Tubb
+#*                            lab session 4.
+#*
+#* evaluateModel()---------->Function taken from Prof. Nick Ryman-Tubb
+#*                           lab session 4.
+#* 
+#* 
+#* calculateConfusion()----->Function taken from Prof. Nick Ryman-Tubb
+#*                           lab session 4.
+#* 
+#* 
+#* NcalcMeasures()---------->Function taken from Prof. Nick Ryman-Tubb
+#*                          lab session 4.
+#* 
+#* 
+#* plotConfusionMatrix() 
+#* 
+#* 
+#* getTreeClassifications() 
+#* 
+#* 
+#* getTreeRules() 
+#* 
+#* 
+#* areaUnderCurve()------->By Miron Kursa https://mbq.me
+#                         See https://stackoverflow.com/questions/4903092/calculate-auc-in-r
+#* 
+#* 
+#* plotThresholdGraph()--->Function taken from Prof. Nick Ryman-Tubb
 #*                        lab session 4.
+#* 
+#* 
+#* createDT() 
+#* 
+#* 
+#* createForest() 
+#* 
+#* 
+#* getTreeMetricts() 
+#* 
+#* 
+#* kFoldModel() 
 
 
 
@@ -430,6 +470,7 @@ getTreeRules<-function(tree, print = F){
 #
 # ************************************************
 # By Miron Kursa https://mbq.me
+# See https://stackoverflow.com/questions/4903092/calculate-auc-in-r
 areaUnderCurve <- function(score, bool) {
   n1 <- sum(!bool)
   n2 <- sum(bool)
@@ -565,30 +606,6 @@ createDT <- function(train, test, predictorField, title = "Importance for Decisi
   treeRules <-getTreeRules(tree,T)
   return(treeClassifications)
 } #endof createDT()
-
-# ************************************************
-# getNegativeImportance() :
-#
-# Create Random Forest on pre-processed dataset
-#
-# INPUT   :
-#         :   Data Frame     - train       - train dataset
-#             Data Frame     - test        - test dataset
-#             boolean        - plot        - TRUE = output charts/results
-#
-# OUTPUT  :
-#         :   Data Frame     - measures  - performance metrics
-#
-# ************************************************
-getNegativeImportance <- function(tree) {
-  
-  negImp <-as.data.frame(importance(tree))
-  negImp <-negImp[which(negImp$MeanDecreaseAccuracy < 0), ]
-  
-  
-  return(rownames(negImp))
-}
-
 
 # ************************************************
 # createForest() :

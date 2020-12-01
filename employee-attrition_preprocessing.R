@@ -3,7 +3,9 @@
 #*
 #*preprocessing()
 #*
+#*
 #*oneHotEncoding()
+#*
 #*
 #*normalise()
 #*
@@ -15,15 +17,16 @@
 #*
 #*NplotOutliers()-------------------> Function taken from Prof. Nick Ryman-Tubb
 #*                                    lab session 4.
-#*                                   
+#*                                    
 #*stratifyDataset()
+#*
 #*
 #*discretiseFields()
 #*
 #*createHoldoutDataset()
 #*
+#*
 #*checkforOutliers()
-
 
 # To manually set a field type
 # This will store $name=field name, $type=field type

@@ -1,3 +1,37 @@
+#*
+#* List of functions in this file:
+#*
+#*
+#* basicStatistics()--> Function taken from Prof. Nick Ryman-Tubb
+#*                      lab session 4.
+#* 
+#* FieldTypes()-------> Function taken from Prof. Nick Ryman-Tubb
+#*                      lab session 4.
+#* 
+#* boxplotAll()
+#* 
+#* 
+#* attritionBars()
+#* 
+#* 
+#* explorationPlots()
+#* 
+#* 
+#* dataExploration()
+#*
+
+
+
+
+
+
+
+
+
+
+
+
+
 # To manually set a field type
 # This will store $name=field name, $type=field type
 manualTypes <- data.frame()

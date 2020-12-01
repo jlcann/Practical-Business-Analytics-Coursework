@@ -20,15 +20,15 @@ CUTOFF            <- 0.90                 # Correlation cutoff
 HOLDOUT           <- 70                   # Holdout percentage for training set                  
 FREQCUT           <- 99/1                 # To remove zero variance fields
 FOREST_SIZE       <- 1000                 # Number of trees in the forest
-LOAD_MODEL        <- TRUE                # If false, script will train a new model. Otherwise, will load existing saved model.
+LOAD_MODEL        <- TRUE                 # If false, script will train a new model. Otherwise, will load existing saved model.
 
 NN_BATCH_SIZE     <- 15                   # Batch size for MLP Model Fitting
 NN_OPTIMISER      <- "adam"               # Name of the optimization algorithm used for MLP Model Fitting
 NN_DROPOUT        <- 0.1                  # 10% Dropout for the MLP Model
-NN_HIDDEN_RELU    <- 16                  # Number of neurons for the MLP Dense Layer with Relu Activation 
+NN_HIDDEN_RELU    <- 16                   # Number of neurons for the MLP Dense Layer with Relu Activation 
 NN_HIDDEN_SIGMOID <- 1                    # Number of neurons for the MLP Dense Layer with Sigmoid Activation 
-NN_EPOCHS         <- 60                 # Maximum number of training epochs for MLP Model Fitting
-K_FOLDS           <- 8                   # Number of holds for stratified cross validation
+NN_EPOCHS         <- 60                   # Maximum number of training epochs for MLP Model Fitting
+K_FOLDS           <- 8                    # Number of holds for stratified cross validation
 
 
 # Define and then load the libraries used in this project
