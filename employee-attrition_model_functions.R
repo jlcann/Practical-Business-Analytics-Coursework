@@ -361,15 +361,15 @@ plotConfusionMatrix <- function(measures, title) {
   
   # create the matrix 
   rect(150, 430, 240, 370, col='Green')
-  text(195, 435, 'Stays', cex=1.2)
+  text(195, 435, 'Leaves', cex=1.2)
   rect(250, 430, 340, 370, col='Red')
-  text(295, 435, 'Leaves', cex=1.2)
+  text(295, 435, 'Stays', cex=1.2)
   text(125, 370, 'Predicted', cex=1.3, srt=90, font=2)
   text(245, 450, 'Actual', cex=1.3, font=2)
   rect(150, 305, 240, 365, col='Red')
   rect(250, 305, 340, 365, col='Green')
-  text(140, 400, 'Stays', cex=1.2, srt=90)
-  text(140, 335, 'Leaves', cex=1.2, srt=90)
+  text(140, 400, 'Leaves', cex=1.2, srt=90)
+  text(140, 335, 'Stays', cex=1.2, srt=90)
   
   # Confusion Matrix Details
   text(195, 400, measures$TP, cex=1.6, font=2, col='white')
