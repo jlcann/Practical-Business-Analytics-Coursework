@@ -175,40 +175,6 @@ main<-function(){
   
   
   
-
-  #randomisedRawDataset <- originalDataset[sample(nrow(originalDataset)),]
-  
-  # The decision tree cannot be made if there are fields where each record has the same value, take these out
-   
-  # randomisedRawDatasetWithoutConstantFields = select(randomisedRawDataset, -c("Over18", "EmployeeCount"))
-  
-  # rawTrainingSet <- randomisedRawDatasetWithoutConstantFields[1:trainingSampleSize,]
-  
-  # rawTestSet <- randomisedRawDatasetWithoutConstantFields[-(1:trainingSampleSize),]
-  
-  # rawDT <- createDT(rawTrainingSet, rawTestSet, ORIGINAL_OUTPUT_FIELD)
-
-  
-  # Print the rules for the trees
-  #kfoldTreeRules <<- getTreeRules(kfoldTree, T)
-  
-  #rawDTRules <<- getTreeRules(rawDT, T)
-
-   
-
-  #processedForest <- createForest(trainingSet,OUTPUT_FIELD,FOREST_SIZE)
-
-  #negativeImp<-getNegativeImportance(processedForest)
-  
-  #newDatasetForForest = select(stratifiedData, -negativeImp)
-  
-  #ReCreate the training Set
-  
-  #trainingSetForest <- newDatasetForForest[1:trainingSampleSize,]
-  
-  #reProcessedForest <<- createForest(trainingSetForest,OUTPUT_FIELD,FOREST_SIZE)
-  
-  
   
 }
 
