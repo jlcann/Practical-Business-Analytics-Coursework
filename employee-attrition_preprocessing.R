@@ -39,6 +39,7 @@ manualTypes <- data.frame()
 # data preprocessing function
 #
 # INPUT       :   dataframe - originalDataset - the original dataset 
+#                 vector    - field_types     - the field types of each column in the dataset
 #
 # OUTPUT      :   dataframe - normalisedDataset - dataset set to be used for the ML models
 # ************************************************
@@ -334,7 +335,6 @@ NplotOutliers<-function(sorted,outliers,fieldName){
 #
 # OUTPUT  : stratifiedData - data.frame - the stratified dataset ready for Cross Validation.
 # ************************************************
-
 
 stratifyDataset <- function(dataset, output, folds){
   

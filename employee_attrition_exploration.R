@@ -20,18 +20,6 @@
 #* dataExploration()
 #*
 
-
-
-
-
-
-
-
-
-
-
-
-
 # To manually set a field type
 # This will store $name=field name, $type=field type
 manualTypes <- data.frame()
@@ -95,7 +83,6 @@ basicStatistics<-function(dataset,...){
                               ))
   print(t)
 }
-
 
 # ************************************************
 # FieldTypes() :
@@ -196,7 +183,28 @@ attritionBars <- function(dataset, field){
   
 }
 
-
+# ****************
+# boxplotAll() :
+#   Exploration method to plot a boxplot for each 
+#   field to visualize data and see outliers
+#
+# INPUT       :   dataframe - original_dataset - dataset to boxplot
+#                 vector    - field_types      - field types of each column in the dataset
+#
+# OUTPUT      :   Plots to be used for data exploration
+#                 1. Barplot - Attrition plot - yes or no
+#                 2. Barplot - Ratio of attrition for each job role
+#                 3. Barplot - Ratio of attrition for each monthly income bin
+#                 4. Boxplot - Boxplot all numeric fields
+#                 5. Boxplot - Monthly Income for each Job Level
+#                 6. Boxplot - Monthly Income for Gender
+#                 7. Boxplot - Monthly Income for OverTime Yes and No
+#                 8. Boxplot - Monthly Income for each Job Role
+#                 9. ScatterPlot - Monthly Income against Total Working Years (experience)
+#                 10.ScatterPlot - Monthly Income against Years At Company (loyalty)
+#                 11.DensityHex - Age against MonthlyIncome
+#                 12.Barplot - High importance fields against attrition
+# ****************
 # Main function for plotting graphs and plots for data exploration
 explorationPlots <-function(originalDataset, field_types) {
   

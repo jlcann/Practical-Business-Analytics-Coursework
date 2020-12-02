@@ -62,8 +62,9 @@
 # INPUT : train - data.frame - Train Dataset
 #         test - data.frame - Test Dataset
 #         outputField - String - Name of predicted field
-#         hiddenNeurons - Integer - Number of neurons for hidden layer
-#         numEpochs - Integer - Number of trainin cycles
+#         i - integer - The current fold of the model
+#         load - Boolean - Whether to load a saved data run the algorithm again
+#         plot - Boolean - Whether to plot the model outputs
 #
 # OUTPUT : results - List - A list containing the accuracy measurements of the model.
 #
@@ -148,6 +149,7 @@ train_MLP_Model <- function(train, test, outputField, i, load, plot = TRUE){
 # INPUT : testData - Data.Frame - Testing Dataset
 #         outputField - String - Name of the field to be predicted
 #         mlp_Model - keras_model_sequential object - The model trained on the train dataset
+#         plot - Boolean - whether to plot the output graphs 
 #
 # OUTPUT : results - List - A list containing the accuracy measurements of the model.
 #
@@ -188,8 +190,8 @@ test_MLP_Model<-function(testData,outputField,mlp_model,plot){
 #
 # INPUT   :   vector double  - predicted   - probability of being class 1
 #         :   vector double  - expected    - dataset to evaluate
-#         :   boolean        - plot             - TRUE=output charts
 #         :   string         - title            - chart title
+#         :   boolean        - plot             - TRUE=output charts
 #
 # OUTPUT  :   List       - Named evaluation measures from confusion matrix
 # ************************************************
@@ -255,7 +257,8 @@ calculateThreshold<-function(predicted,
 # Best threshold is determined based on the smallest Euclidean Distance.
 #
 # INPUT : testPredicted - Vector - Predicted class from the tested model
-#         ExpectedTestOutput - Vector -  The expected class for each of the predicted values
+#         expectedTestOutput - Vector -  The expected class for each of the predicted values
+#         threshold - double - The threshold value of the model
 #
 # OUTPUT : results - List - A list containing the accuracy measurements of the model.
 #
@@ -281,6 +284,7 @@ evaluateModel<-function(testPredicted,expectedTestOutput,threshold){
 # Calculate a confusion matrix for 2-class classifier - Yes/1 and No/0
 # INPUT: vector - expectedClass  - {0,1}, Expected outcome from each row (labels)
 #        vector - predictedClass - {0,1}, Predicted outcome from each row (labels)
+#        double - threshold      - The threshold value of the model
 #
 # OUTPUT: A list with the  entries from NcalcMeasures()
 # ************************************************
@@ -313,16 +317,10 @@ calculateConfusion<-function(expectedClass,predictedClass,threshold){
 #
 # OUTPUT: A list with the following entries:
 #        TP        - double - True Positive records
+#        FN        - double - False Negative records
 #        FP        - double - False Positive records
 #        TN        - double - True Negative records
-#        FN        - double - False Negative records
-#        accuracy  - double - accuracy measure
-#        pgood     - double - precision for "good" (values are 1) measure
-#        pbad      - double - precision for "bad" (values are 1) measure
-#        FPR       - double - FPR measure
-#        TPR       - double - FPR measure
-#        TNR       - double - TNR measure
-#        MCC       - double - Matthew's Correlation Coeficient
+#        TH        - double - Threshold value
 # ************************************************
 
 NcalcMeasures<-function(TP,FN,FP,TN,TH){
@@ -573,7 +571,9 @@ plotThresholdGraph <- function(toPlot,
 #
 # INPUT   :
 #             Data Frame     - train                 - train dataset
+#             Data Frame     - test                  - test dataset
 #             charatcter     - predictorField        - the name of the predictor field in the dataset
+#             character      - title                 - the title of the decision tree
 #             boolean        - plot                  - if true, also plots tree rules
 #
 # OUTPUT
@@ -610,7 +610,13 @@ createDT <- function(train, test, predictorField, title = "Importance for Decisi
 #
 # INPUT   :
 #             Data Frame     - train                 - train dataset
-#             charatcter     - predictorField        - the name of the predictor field in the dataset
+#             Data Frame     - test                  - test dataset
+#             character     - predictorField        - the name of the predictor field in the dataset
+#             integer        - i                     - the fold for the cross validation
+#             character      - title                 - the title for the model
+#             character      - classLabelChar        - the class label
+#             character      - filename              - the file to load or dave the model from.
+#             boolean        - showInViewer          - if true, show the tree rules in the viewer pane
 #             boolean        - plot                  - if true, also plots tree rules
 #
 # OUTPUT
@@ -652,6 +658,7 @@ createAndEvaluateDT <- function(train, test, predictorField, i, load, title = "I
     metricsView <- as.data.frame(as.matrix(treeMetrics))
     colnames(metricsView) <- paste0("Decision Tree Holdout Measures (", fileName, ")")
     print(formattable::formattable(metricsView))
+    plotConfusionMatrix(measures = treeMetrics, title = "Decision Tree Holdout Measures")
   }
   
   # Only print out the rules for the tree generated from the first fold
@@ -667,9 +674,12 @@ createAndEvaluateDT <- function(train, test, predictorField, i, load, title = "I
 # Creates a Random Forest on a dataset
 #
 # INPUT   :
-#         :   Data Frame     - train       - train dataset
-#             Data Frame     - test        - test dataset
-#             boolean        - plot        - TRUE = output charts/results
+#         :   Data Frame     - train              - train dataset
+#             Data Frame     - test               - test dataset
+#             character      - predictorField     - the field we are predicting 
+#             integer        - forestSize         - the size of the forest to create
+#             character      - title              - title for the forest
+#             boolean        - plot               - TRUE = output charts/results
 #
 # OUTPUT  :
 #         :   Data Frame     - measures  - performance metrics
@@ -801,10 +811,12 @@ getTreeMetrics <- function(treeClassifications, testDataset, predictorField, cla
 #
 # 
 #
-# INPUT   : dataset - dataset contained in data.frame
-#           FUN - Function Name (Model)
+# INPUT   :    FUN - Function Name (Model)
+#              dataset - dataset contained in data.frame
+#              outputField - output field we are prediciting
+#           
 #
-# OUTPUT : None
+# OUTPUT :     returns the confusion matrix details. 
 # ************************************************
 
 
