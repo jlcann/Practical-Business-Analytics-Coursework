@@ -37,10 +37,16 @@
 #*                        lab session 4.
 #* 
 #* 
-#* createDT() 
+#* createDT()
+#* 
+#*  
+#* createAndEvaluateDT()
 #* 
 #* 
-#* createForest() 
+#* createForest()
+#* 
+#* 
+#* createAndEvaluateForest()
 #* 
 #* 
 #* getTreeMetricts() 
