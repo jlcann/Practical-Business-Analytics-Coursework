@@ -617,7 +617,7 @@ createDT <- function(train, test, predictorField, title = "Importance for Decisi
 #         :   object     - tree    -  a new trained decision tree
 #
 # ************************************************
-createAndEvaluateDT <- function(train, test, predictorField, i, load, title = "Importance for Decision Tree", classLabelChar = NULL, fileName = "_dt_", plot = F) {
+createAndEvaluateDT <- function(train, test, predictorField, i, load, title = "Importance for Decision Tree", classLabelChar = NULL, fileName = "_dt_", showInViewer = F, plot = F) {
   
   if (!load) {
     
@@ -647,6 +647,12 @@ createAndEvaluateDT <- function(train, test, predictorField, i, load, title = "I
   
   treeClassifications <- getTreeClassifications(tree, test, predictorField)
   treeMetrics <- getTreeMetrics(treeClassifications, test, predictorField, classLabelChar = classLabelChar)
+  
+  if (showInViewer) {
+    metricsView <- as.data.frame(as.matrix(treeMetrics))
+    colnames(metricsView) <- paste0("Decision Tree Holdout Measures (", fileName, ")")
+    print(formattable::formattable(metricsView))
+  }
   
   # Only print out the rules for the tree generated from the first fold
   treeRules <-getTreeRules(tree,ifelse(i == 1, T, F))
@@ -713,7 +719,7 @@ createForest<-function(train,test,predictorField,forestSize,title = "Importance 
 #         :   Data Frame     - measures  - performance metrics
 #
 # ************************************************
-createAndEvaluateForest<-function(train,test,predictorField,i,load,forestSize,title = "Importance for Random Forest",plot=TRUE){
+createAndEvaluateForest<-function(train,test,predictorField,i,load,forestSize,title = "Importance for Random Forest",showInViewer=F,plot=TRUE){
   
   if (!load) {
     
@@ -730,6 +736,12 @@ createAndEvaluateForest<-function(train,test,predictorField,i,load,forestSize,ti
   
   treeClassifications <- getTreeClassifications(rf, test, predictorField)
   treeMetrics <- getTreeMetrics(treeClassifications, test, predictorField)
+  
+  if (showInViewer) {
+    metricsView <- as.data.frame(as.matrix(treeMetrics))
+    colnames(metricsView) <- "Random Forest Holdout Measures"
+    print(formattable::formattable(metricsView))
+  }
   
   return(treeMetrics)
 } #endof createAndEvaluateForest()
@@ -823,7 +835,7 @@ kFoldModel <- function(FUN,dataset,outputField,...){
   if (deparse(substitute(FUN)) == "createAndEvaluateDT") {
     plotConfusionMatrix(as.list(resultMeans), "Decision Tree Stratified Cross Validation Confusion Matrix")
     confRes <- as.data.frame(as.matrix(resultMeans))
-    colnames(confRes) <- ("Decision Tree Stratified Cross Validation Measures")
+    colnames(confRes) <- "Decision Tree Stratified Cross Validation Measures"
     print(formattable::formattable(round(confRes, 2)))
   }
   if (deparse(substitute(FUN)) == "createAndEvaluateForest"){
