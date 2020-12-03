@@ -842,20 +842,33 @@ kFoldModel <- function(FUN,dataset,outputField,...){
   
   results <- data.frame()
   
+  #Iterate from 1 to number of folds and train / test a model for each.
   for (i in 1:K_FOLDS) {
     
+    #Create the training set consisting of K-1 of the folds,
+    #and the testing set of 1 of the folds.
     separatedData<-kFoldTrainingSplit(dataset,i)
     
+    #Call the model function passed in the argument with the testing and training data
+    #as well as the value of i so the model can be saved and loaded later.
     modelMeasures<-FUN(train=separatedData$train,
                        test=separatedData$test,outputField,i,...)
+    
+    #Bind the results list to the result data frame
     results <- rbind(results, modelMeasures)
     
   }
   
-  resultMeans<-colMeans(results)
+  #Average the results from all K models.
+  resultMeans<<-colMeans(results)
+  #Change columns 1 through 4, so TP, FN, TN, FP to an integer
   resultMeans[1:4]<-as.integer(resultMeans[1:4])
   
   
+  #Depending on what model was called into the function
+  #We want to produce the model accuracy statistics and also 
+  #Plot a confusion matrix.
+  #The code below does this.
   if (deparse(substitute(FUN)) == "train_MLP_Model"){
     plotConfusionMatrix(as.list(resultMeans), "MLP Model Stratified Cross Validation Confusion Matrix")
     confRes <- as.data.frame(as.matrix(resultMeans))
@@ -875,7 +888,7 @@ kFoldModel <- function(FUN,dataset,outputField,...){
     print(formattable::formattable(round(confRes, 2))) 
   }
   
-  
+  #Return the average results as a list.
   return(as.list(resultMeans))
 }
 

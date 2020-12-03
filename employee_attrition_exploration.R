@@ -360,7 +360,17 @@ explorationPlots <-function(originalDataset, field_types) {
   
 }
 
-
+#************************************
+#* dataExploration()
+#* 
+#* Acquire the field types from the dataset, and then call
+#* the explorationPlots function with the dataset and the fieldTypes.
+#* 
+#* inputs       - dataset - data.frame - orginal dataset before preprocessing.
+#* 
+#* outputs      - none
+#* 
+#* **********************************
 dataExploration <- function(dataset){
   field_types<-FieldTypes(dataset)
   allPlots <- explorationPlots(dataset, field_types)

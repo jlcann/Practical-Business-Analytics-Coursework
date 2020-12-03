@@ -153,7 +153,7 @@ main<-function(){
   # This method splits the dataset up into N bins, and return the mean averages of the N models trained on the bins.
   #*****************************************************************************************************************
   
-  #MLP_Stratified_Cross_Val <- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,LOAD_MODEL,plot=FALSE)
+  MLP_Stratified_Cross_Val <- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,LOAD_MODEL,plot=FALSE)
   
   #*****************************************************************************************************************
   
