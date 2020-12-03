@@ -860,7 +860,7 @@ kFoldModel <- function(FUN,dataset,outputField,...){
   }
   
   #Average the results from all K models.
-  resultMeans<<-colMeans(results)
+  resultMeans<-colMeans(results)
   #Change columns 1 through 4, so TP, FN, TN, FP to an integer
   resultMeans[1:4]<-as.integer(resultMeans[1:4])
   
