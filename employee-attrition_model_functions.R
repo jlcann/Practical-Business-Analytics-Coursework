@@ -68,7 +68,7 @@
 # INPUT : train - data.frame - Train Dataset
 #         test - data.frame - Test Dataset
 #         outputField - String - Name of predicted field
-#         i - integer - The current fold of the model
+#         i - integer - The current fold of the model - or an arbitrary int to identify holdout. IN our case, 999.
 #         load - Boolean - Whether to load a saved data run the algorithm again
 #         plot - Boolean - Whether to plot the model outputs
 #
@@ -76,6 +76,7 @@
 #
 # ************************************************
 train_MLP_Model <- function(train, test, outputField, i, load, plot = TRUE){
+  
   
   if (!load) {
     
@@ -98,10 +99,13 @@ train_MLP_Model <- function(train, test, outputField, i, load, plot = TRUE){
       layer_dense(input_shape = ncol(trainingData), units = ncol(trainingData), activation = "relu") %>%
       #Dropout layer, this helps to prevent over-fitting the model.
       layer_dropout(NN_DROPOUT) %>%
+      #Another ReLU layer, this time using the amount of neurons defined in the NN_HIDDEN_RELU constant.
       layer_dense(input_shape = ncol(trainingData), units = NN_HIDDEN_RELU, activation = "relu") %>%
-      #Dropout layer, this helps to prevent over-fitting the model.
+      #A second dropout layer to help prevent overfit.
       layer_dropout(NN_DROPOUT) %>%
+      #A sigmoid layer with only two neurons.
       layer_dense(units = NN_HIDDEN_SIGMOID, activation = "sigmoid") %>%
+      #And finally the output layer which will give us our classification probabilities
       layer_dense(units = 2, activation = "softmax")
     
     #Print model summary
@@ -126,10 +130,12 @@ train_MLP_Model <- function(train, test, outputField, i, load, plot = TRUE){
         validation_split = 0.2
       )
     
+    #This will save the model once it has been fit on the training data.
     model_Classifier %>% save_model_tf(paste0("MLP_Model_", i))
   }
   
   else {
+    #This will load a model ready to be tested on any test sets. 
     model_Classifier <- load_model_tf(paste0("MLP_Model_", i))
   }
   
@@ -137,8 +143,14 @@ train_MLP_Model <- function(train, test, outputField, i, load, plot = TRUE){
   results <- test_MLP_Model(test,outputField,model_Classifier,plot)
   
   
-  if (plot)
+  if (plot) {
+    
+    #This block of code will plot the accuracy statistics into the viewer, and also plot the confusion matrix in the plots.
     plotConfusionMatrix(results, "MLP Model Confusion Matrix")
+    metricsView <- as.data.frame(as.matrix(results))
+    colnames(metricsView) <- "MLP with Holdout Measures"
+    print(formattable::formattable(metricsView))
+  }
   
   #return the stats of the tested model.
   return(results)

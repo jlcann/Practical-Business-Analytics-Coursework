@@ -20,7 +20,7 @@ CUTOFF            <- 0.90                 # Correlation cutoff
 HOLDOUT           <- 70                   # Holdout percentage for training set                  
 FREQCUT           <- 99/1                 # To remove zero variance fields
 FOREST_SIZE       <- 1000                 # Number of trees in the forest
-LOAD_MODEL        <- TRUE                 # If false, script will train a new model. Otherwise, will load existing saved model.
+LOAD_MODEL        <- TRUE                # If false, script will train a new model. Otherwise, will load existing saved model.
 
 NN_BATCH_SIZE     <- 15                   # Batch size for MLP Model Fitting
 NN_OPTIMISER      <- "adam"               # Name of the optimization algorithm used for MLP Model Fitting
@@ -144,7 +144,7 @@ main<-function(){
   # The model immediately below is an MLP using a simple holdout method for training and testing.
   #*****************************************************************************************************************
   
-  #MLP_With_Holdout <- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD,i = 999, LOAD_MODEL)
+  #MLP_With_Holdout <- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD, i = 999, LOAD_MODEL)
   
   #*****************************************************************************************************************
   
@@ -169,7 +169,7 @@ main<-function(){
   # This code trains random forest models using stratified cross validation.
   #*****************************************************************************************************************  
   
-  #kfoldForest <- kFoldModel(createAndEvaluateForest, stratifiedData, OUTPUT_FIELD, LOAD_MODEL, forestSize = FOREST_SIZE, plot=F)
+  #Forest_Stratified_Cross_Val <- kFoldModel(createAndEvaluateForest, stratifiedData, OUTPUT_FIELD, LOAD_MODEL, forestSize = FOREST_SIZE, plot=F)
   
   #*****************************************************************************************************************
   
