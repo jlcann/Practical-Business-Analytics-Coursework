@@ -37,10 +37,16 @@
 #*                        lab session 4.
 #* 
 #* 
-#* createDT() 
+#* createDT()
+#* 
+#*  
+#* createAndEvaluateDT()
 #* 
 #* 
-#* createForest() 
+#* createForest()
+#* 
+#* 
+#* createAndEvaluateForest()
 #* 
 #* 
 #* getTreeMetricts() 
@@ -62,16 +68,18 @@
 # INPUT : train - data.frame - Train Dataset
 #         test - data.frame - Test Dataset
 #         outputField - String - Name of predicted field
-#         hiddenNeurons - Integer - Number of neurons for hidden layer
-#         numEpochs - Integer - Number of trainin cycles
+#         i - integer - The current fold of the model - or an arbitrary int to identify holdout. IN our case, 999.
+#         load - Boolean - Whether to load a saved data run the algorithm again
+#         plot - Boolean - Whether to plot the model outputs
 #
 # OUTPUT : results - List - A list containing the accuracy measurements of the model.
 #
 # ************************************************
 train_MLP_Model <- function(train, test, outputField, i, load, plot = TRUE){
   
-  if (load == FALSE) {
   
+  if (!load) {
+    
     #Remove the class field from the training data and convert to a matrix as 
     #required by the model.
     trainingData <- as.matrix(train[-(which(names(train)==outputField))])
@@ -87,15 +95,18 @@ train_MLP_Model <- function(train, test, outputField, i, load, plot = TRUE){
     
     #Create and add layers to the model. Must used keras pipeline operator '%>%'
     model_Classifier %>%
-    #First layer must have input dimensions of the dataset, so number of columns
-    layer_dense(input_shape = ncol(trainingData), units = ncol(trainingData), activation = "relu") %>%
-    #Dropout layer, this helps to prevent over-fitting the model.
-    layer_dropout(NN_DROPOUT) %>%
-    layer_dense(input_shape = ncol(trainingData), units = NN_HIDDEN_RELU, activation = "relu") %>%
+      #First layer must have input dimensions of the dataset, so number of columns
+      layer_dense(input_shape = ncol(trainingData), units = ncol(trainingData), activation = "relu") %>%
       #Dropout layer, this helps to prevent over-fitting the model.
-    layer_dropout(NN_DROPOUT) %>%
-    layer_dense(units = NN_HIDDEN_SIGMOID, activation = "sigmoid") %>%
-    layer_dense(units = 2, activation = "softmax")
+      layer_dropout(NN_DROPOUT) %>%
+      #Another ReLU layer, this time using the amount of neurons defined in the NN_HIDDEN_RELU constant.
+      layer_dense(input_shape = ncol(trainingData), units = NN_HIDDEN_RELU, activation = "relu") %>%
+      #A second dropout layer to help prevent overfit.
+      layer_dropout(NN_DROPOUT) %>%
+      #A sigmoid layer with only two neurons.
+      layer_dense(units = NN_HIDDEN_SIGMOID, activation = "sigmoid") %>%
+      #And finally the output layer which will give us our classification probabilities
+      layer_dense(units = 2, activation = "softmax")
     
     #Print model summary
     summary(model_Classifier)
@@ -103,39 +114,47 @@ train_MLP_Model <- function(train, test, outputField, i, load, plot = TRUE){
     
     #Must now add a loss function and an optimizer to the model
     model_Classifier %>%
-    compile(
-      loss = "binary_crossentropy",
-      optimizer = NN_OPTIMISER,
-      metrics = "accuracy"
-    )
+      compile(
+        loss = "binary_crossentropy",
+        optimizer = NN_OPTIMISER,
+        metrics = "accuracy"
+      )
     
     #Fit the model
     model_Classifier %>%
-    fit(
-      x = trainingData,
-      y = expectedOutput,
-      epochs = NN_EPOCHS,
-      batch_size = NN_BATCH_SIZE,
-      validation_split = 0.2
-    )
+      fit(
+        x = trainingData,
+        y = expectedOutput,
+        epochs = NN_EPOCHS,
+        batch_size = NN_BATCH_SIZE,
+        validation_split = 0.2
+      )
     
-    model_Classifier %>% save_model_tf(paste("MLP_Model_", i))
+    #This will save the model once it has been fit on the training data.
+    model_Classifier %>% save_model_tf(paste0("MLP_Model_", i))
   }
   
   else {
-    model_Classifier <- load_model_tf(paste("MLP_Model_", i))
+    #This will load a model ready to be tested on any test sets. 
+    model_Classifier <- load_model_tf(paste0("MLP_Model_", i))
   }
   
   #Assign the results of the model tested on the test dataset.
   results <- test_MLP_Model(test,outputField,model_Classifier,plot)
   
   
-  if (plot==TRUE)
+  if (plot) {
+    
+    #This block of code will plot the accuracy statistics into the viewer, and also plot the confusion matrix in the plots.
     plotConfusionMatrix(results, "MLP Model Confusion Matrix")
+    metricsView <- as.data.frame(as.matrix(results))
+    colnames(metricsView) <- "MLP with Holdout Measures"
+    print(formattable::formattable(metricsView))
+  }
   
   #return the stats of the tested model.
   return(results)
-
+  
   
 } 
 
@@ -148,6 +167,7 @@ train_MLP_Model <- function(train, test, outputField, i, load, plot = TRUE){
 # INPUT : testData - Data.Frame - Testing Dataset
 #         outputField - String - Name of the field to be predicted
 #         mlp_Model - keras_model_sequential object - The model trained on the train dataset
+#         plot - Boolean - whether to plot the output graphs 
 #
 # OUTPUT : results - List - A list containing the accuracy measurements of the model.
 #
@@ -188,8 +208,8 @@ test_MLP_Model<-function(testData,outputField,mlp_model,plot){
 #
 # INPUT   :   vector double  - predicted   - probability of being class 1
 #         :   vector double  - expected    - dataset to evaluate
-#         :   boolean        - plot             - TRUE=output charts
 #         :   string         - title            - chart title
+#         :   boolean        - plot             - TRUE=output charts
 #
 # OUTPUT  :   List       - Named evaluation measures from confusion matrix
 # ************************************************
@@ -232,7 +252,7 @@ calculateThreshold<-function(predicted,
   
   # 121020NRT - Euclidean distance to "perfect" classifier (smallest the best)
   # use which.min() to return a single index to the lowest value in the vector
-
+  
   minEuclidean<<-toPlot$x[which.min(toPlot$distance)]
   
   myThreshold<-minEuclidean      # Min Distance should be the same as analysis["threshold"]
@@ -255,7 +275,8 @@ calculateThreshold<-function(predicted,
 # Best threshold is determined based on the smallest Euclidean Distance.
 #
 # INPUT : testPredicted - Vector - Predicted class from the tested model
-#         ExpectedTestOutput - Vector -  The expected class for each of the predicted values
+#         expectedTestOutput - Vector -  The expected class for each of the predicted values
+#         threshold - double - The threshold value of the model
 #
 # OUTPUT : results - List - A list containing the accuracy measurements of the model.
 #
@@ -281,6 +302,7 @@ evaluateModel<-function(testPredicted,expectedTestOutput,threshold){
 # Calculate a confusion matrix for 2-class classifier - Yes/1 and No/0
 # INPUT: vector - expectedClass  - {0,1}, Expected outcome from each row (labels)
 #        vector - predictedClass - {0,1}, Predicted outcome from each row (labels)
+#        double - threshold      - The threshold value of the model
 #
 # OUTPUT: A list with the  entries from NcalcMeasures()
 # ************************************************
@@ -313,16 +335,10 @@ calculateConfusion<-function(expectedClass,predictedClass,threshold){
 #
 # OUTPUT: A list with the following entries:
 #        TP        - double - True Positive records
+#        FN        - double - False Negative records
 #        FP        - double - False Positive records
 #        TN        - double - True Negative records
-#        FN        - double - False Negative records
-#        accuracy  - double - accuracy measure
-#        pgood     - double - precision for "good" (values are 1) measure
-#        pbad      - double - precision for "bad" (values are 1) measure
-#        FPR       - double - FPR measure
-#        TPR       - double - FPR measure
-#        TNR       - double - TNR measure
-#        MCC       - double - Matthew's Correlation Coeficient
+#        TH        - double - Threshold value
 # ************************************************
 
 NcalcMeasures<-function(TP,FN,FP,TN,TH){
@@ -377,7 +393,7 @@ plotConfusionMatrix <- function(measures, title) {
   text(295, 400, measures$FP, cex=1.6, font=2, col='white')
   text(295, 335, measures$TN, cex=1.6, font=2, col='white')
   
-
+  
   plot(c(100, 0), c(100, 0), type = "n", xlab="", ylab="", main = "Model Details", xaxt='n', yaxt='n')
   text(10, 85, "Accuracy", cex=1.2, font=2)
   text(10, 70, round(as.numeric(measures$accuracy), 3), cex=1.2)
@@ -418,9 +434,7 @@ getTreeClassifications <- function(tree, testDataset, predictorField){
   # We use type=prob here so that we can later find the ideal threshold for the classifier
   predictedClassProbabilities <- predict(tree, inputs, type = "prob")
   
-  processedDTMetrics <- getTreeMetrics(predictedClassProbabilities, testDataset, predictorField)  
-  
-  return(processedDTMetrics)
+  return(predictedClassProbabilities)
 } #endof getTreeClassifications()
 
 # ************************************************
@@ -438,13 +452,14 @@ getTreeClassifications <- function(tree, testDataset, predictorField){
 getTreeRules<-function(tree, print = F){
   #library(tidyrules) is already imported in the main script file
   
-  # extract rules into a data frame using tidyRules
+  # extract rules into a data frame using tidyRules and make text format more friendly
   rules <- as.data.frame(tidyRules(tree))
   for (i in 1:nrow(rules)) {
     rules[i, 2] <- str_replace_all(rules[i, 2], "%in%", "is")
     rules[i, 2] <- gsub("c(", "", rules[i, 2], fixed = T)
     rules[i, 2] <- gsub(")", "", rules[i, 2], fixed = T)
     rules[i, 2] <- str_replace_all(rules[i, 2], ",", " OR")
+    rules[i, 2] <- str_replace_all(rules[i, 2], "&", "AND")
   }
   
   # Use more descriptive column names and drop undesired columns
@@ -570,11 +585,13 @@ plotThresholdGraph <- function(toPlot,
 # ************************************************
 # createDT() :
 #
-# Creates A C5 Decision Tree from training data
+# Creates a C5 Decision Tree from training data
 #
 # INPUT   :
 #             Data Frame     - train                 - train dataset
+#             Data Frame     - test                  - test dataset
 #             charatcter     - predictorField        - the name of the predictor field in the dataset
+#             character      - title                 - the title of the decision tree
 #             boolean        - plot                  - if true, also plots tree rules
 #
 # OUTPUT
@@ -587,7 +604,57 @@ createDT <- function(train, test, predictorField, title = "Importance for Decisi
   inputs <- train[, -outputClassIndex]
   output <- train[, outputClassIndex]
   
-  tree<-C50::C5.0(x=inputs, y=factor(output), rules=T, trials=1)
+  tree <- C50::C5.0(x=inputs, y=factor(output), rules=T, trials=1)
+  
+  if (plot){    
+    # Get importance of the input fields
+    importance<-C50::C5imp(tree, metric = "usage")
+    names(importance)<-"Weight"
+    importance<-importance[order(importance$Weight,decreasing=TRUE),,drop=FALSE]    
+    print(formattable::formattable(importance))    
+    # Plot the importance fields
+    barplot(t(importance),las=2,
+            border = 0, cex.names =0.7,
+            main=title)    
+  }
+  
+  return(tree)
+} #endof createDT()
+
+# ************************************************
+# createAndEvaluateDT() :
+#
+# Creates and evaluates a C5 Decision Tree from training data
+#
+# INPUT   :
+#             Data Frame     - train                 - train dataset
+#             Data Frame     - test                  - test dataset
+#             character     - predictorField        - the name of the predictor field in the dataset
+#             integer        - i                     - the fold for the cross validation
+#             character      - title                 - the title for the model
+#             character      - classLabelChar        - the class label
+#             character      - filename              - the file to load or dave the model from.
+#             boolean        - showInViewer          - if true, show the tree rules in the viewer pane
+#             boolean        - plot                  - if true, also plots tree rules
+#
+# OUTPUT
+#         :   object     - tree    -  a new trained decision tree
+#
+# ************************************************
+createAndEvaluateDT <- function(train, test, predictorField, i, load, title = "Importance for Decision Tree", classLabelChar = NULL, fileName = "_dt_", showInViewer = F, plot = F) {
+  
+  if (!load) {
+    
+    tree <- createDT(train, test, predictorField, title, plot=plot)
+    
+    if (!dir.exists("Tree_Models")) {
+      dir.create("Tree_Models")
+    }
+    
+    saveRDS(tree, paste0("Tree_Models/", fileName, i, ".rds"))
+  } else {
+    tree <- readRDS(paste0("Tree_Models/", fileName, i, ".rds"))
+  }
   
   
   if (plot){    
@@ -603,14 +670,73 @@ createDT <- function(train, test, predictorField, title = "Importance for Decisi
   }
   
   treeClassifications <- getTreeClassifications(tree, test, predictorField)
-  treeRules <-getTreeRules(tree,T)
-  return(treeClassifications)
-} #endof createDT()
+  treeMetrics <- getTreeMetrics(treeClassifications, test, predictorField, classLabelChar = classLabelChar)
+  
+  if (showInViewer) {
+    metricsView <- as.data.frame(as.matrix(treeMetrics))
+    colnames(metricsView) <- paste0("Decision Tree Holdout Measures (", fileName, ")")
+    print(formattable::formattable(metricsView))
+    plotConfusionMatrix(measures = treeMetrics, title = "Decision Tree Holdout Measures")
+  }
+  
+  # Only print out the rules for the tree generated from the first fold
+  treeRules <-getTreeRules(tree,ifelse(i == 1, T, F))
+  
+  return(treeMetrics)
+} #endof createAndEvaluateDT()
+
 
 # ************************************************
 # createForest() :
 #
-# Create Random Forest on pre-processed dataset
+# Creates a Random Forest on a dataset
+#
+# INPUT   :
+#         :   Data Frame     - train              - train dataset
+#             Data Frame     - test               - test dataset
+#             character      - predictorField     - the field we are predicting 
+#             integer        - forestSize         - the size of the forest to create
+#             character      - title              - title for the forest
+#             boolean        - plot               - TRUE = output charts/results
+#
+# OUTPUT  :
+#         :   Data Frame     - measures  - performance metrics
+#
+# ************************************************
+createForest<-function(train,test,predictorField,forestSize,title = "Importance for Random Forest",plot=TRUE) {
+  
+  # Need to produce a data frame from the predictor fields and a vector for the output
+  outputClassIndex <- which(names(train) == predictorField)
+  inputs <- train[-outputClassIndex]
+  output <- train[, outputClassIndex]
+  
+  rf<-randomForest::randomForest(inputs,
+                                 factor(output),
+                                 ntree=forestSize,
+                                 importance=TRUE,
+                                 mtry=sqrt(ncol(inputs)))
+  
+  if (plot){
+    # Get importance of the input fields
+    importance<-randomForest::importance(rf,scale=TRUE,type=1)
+    importance<-importance[order(importance,decreasing=TRUE),,drop=FALSE]
+    
+    colnames(importance)<-"Weight"
+    
+    barplot(t(importance),las=2, border = 0,
+            cex.names =0.7,
+            main=title)
+    
+    print(formattable::formattable(data.frame(importance)))
+  }
+  
+  return(rf)
+}
+
+# ************************************************
+# createAndEvaluateForest() :
+#
+# Creates Random Forest on a dataset and evaluates it
 #
 # INPUT   :
 #         :   Data Frame     - train       - train dataset
@@ -621,63 +747,32 @@ createDT <- function(train, test, predictorField, title = "Importance for Decisi
 #         :   Data Frame     - measures  - performance metrics
 #
 # ************************************************
-createForest<-function(train,test,predictorField,i,load ,forestSize,title = "Importance for Random Forest",plot=TRUE){
+createAndEvaluateForest<-function(train,test,predictorField,i,load,forestSize,title = "Importance for Random Forest",showInViewer=F,plot=TRUE){
   
-  if (load == FALSE) {
+  if (!load) {
     
-    # Need to produce a data frame from the predictor fields and a vector for the output
-    outputClassIndex <- which(names(train) == predictorField)
-    inputs <- train[-outputClassIndex]
-    output <- train[, outputClassIndex]
+    rf <- createForest(train, test, predictorField, forestSize, title, plot=plot)
     
-    #does it need factor(expected)
-    rf<-randomForest::randomForest(inputs,
-                                   factor(output),
-                                   ntree=forestSize,
-                                   importance=TRUE,
-                                   mtry=sqrt(ncol(inputs)))
+    if (!dir.exists("Tree_Models")) {
+      dir.create("Tree_Models")
+    }
     
     saveRDS(rf, paste0("Tree_Models/_rf_", i, ".rds"))
-  }
-  
-  else {
+  } else {
     rf <- readRDS(paste0("Tree_Models/_rf_", i, ".rds"))
-    
   }
   
-  
-  
-  # ************************************************
-  # # Use the created decision tree with the test dataset
-  # measures<-getTreeClassifications(tree = rf,
-  #                                  testDataset = 
-  #                                  predictorField = predictorField,
-  #                                  title=myTitle,
-  #                                  plot=plot)
   treeClassifications <- getTreeClassifications(rf, test, predictorField)
+  treeMetrics <- getTreeMetrics(treeClassifications, test, predictorField)
   
-  if (plot==TRUE){
-    # Get importance of the input fields
-    
-    importance<-randomForest::importance(rf,scale=TRUE,type=1)
-    importance<-importance[order(importance,decreasing=TRUE),,drop=FALSE]
-    
-    colnames(importance)<-"Strength"
-    
-    barplot(t(importance),las=2, border = 0,
-            cex.names =0.7,
-            main=title)
-    
-    print(formattable::formattable(data.frame(importance)))
-    
-    plotConfusionMatrix(treeClassifications, "Forest With Holdout")
+  if (showInViewer) {
+    metricsView <- as.data.frame(as.matrix(treeMetrics))
+    colnames(metricsView) <- "Random Forest Holdout Measures"
+    print(formattable::formattable(metricsView))
   }
   
-  
-  
-  
-  return(treeClassifications)
-} #endof createForest()
+  return(treeMetrics)
+} #endof createAndEvaluateForest()
 
 # ************************************************
 # getTreeMetrics() :
@@ -734,10 +829,12 @@ getTreeMetrics <- function(treeClassifications, testDataset, predictorField, cla
 #
 # 
 #
-# INPUT   : dataset - dataset contained in data.frame
-#           FUN - Function Name (Model)
+# INPUT   :    FUN - Function Name (Model)
+#              dataset - dataset contained in data.frame
+#              outputField - output field we are prediciting
+#           
 #
-# OUTPUT : None
+# OUTPUT :     returns the confusion matrix details. 
 # ************************************************
 
 
@@ -745,40 +842,53 @@ kFoldModel <- function(FUN,dataset,outputField,...){
   
   results <- data.frame()
   
+  #Iterate from 1 to number of folds and train / test a model for each.
   for (i in 1:K_FOLDS) {
     
+    #Create the training set consisting of K-1 of the folds,
+    #and the testing set of 1 of the folds.
     separatedData<-kFoldTrainingSplit(dataset,i)
     
+    #Call the model function passed in the argument with the testing and training data
+    #as well as the value of i so the model can be saved and loaded later.
     modelMeasures<-FUN(train=separatedData$train,
                        test=separatedData$test,outputField,i,...)
+    
+    #Bind the results list to the result data frame
     results <- rbind(results, modelMeasures)
     
   }
   
+  #Average the results from all K models.
   resultMeans<-colMeans(results)
+  #Change columns 1 through 4, so TP, FN, TN, FP to an integer
   resultMeans[1:4]<-as.integer(resultMeans[1:4])
-
   
+  
+  #Depending on what model was called into the function
+  #We want to produce the model accuracy statistics and also 
+  #Plot a confusion matrix.
+  #The code below does this.
   if (deparse(substitute(FUN)) == "train_MLP_Model"){
     plotConfusionMatrix(as.list(resultMeans), "MLP Model Stratified Cross Validation Confusion Matrix")
     confRes <- as.data.frame(as.matrix(resultMeans))
-    colnames(confRes) <- "MLP Stratified Cross Validation Accuracy"
+    colnames(confRes) <- "MLP Stratified Cross Validation Measures"
     print(formattable::formattable(round(confRes, 2)))
   }
-  if (deparse(substitute(FUN)) == "createDT") {
+  if (deparse(substitute(FUN)) == "createAndEvaluateDT") {
     plotConfusionMatrix(as.list(resultMeans), "Decision Tree Stratified Cross Validation Confusion Matrix")
     confRes <- as.data.frame(as.matrix(resultMeans))
-    colnames(confRes) <- ("Decusion Tree Stratified Cross Validation Accuracy")
+    colnames(confRes) <- "Decision Tree Stratified Cross Validation Measures"
     print(formattable::formattable(round(confRes, 2)))
   }
-  if (deparse(substitute(FUN)) == "createForest"){
+  if (deparse(substitute(FUN)) == "createAndEvaluateForest"){
     plotConfusionMatrix(as.list(resultMeans), "Forest Stratified Cross Validation Confusion Matrix")
     confRes <- as.data.frame(as.matrix(resultMeans))
-    colnames(confRes) <- "Random Forest Stratified Cross Validation Accuracy"
+    colnames(confRes) <- "Random Forest Stratified Cross Validation Measures"
     print(formattable::formattable(round(confRes, 2))) 
   }
   
-  
+  #Return the average results as a list.
   return(as.list(resultMeans))
 }
 

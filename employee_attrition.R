@@ -20,7 +20,7 @@ CUTOFF            <- 0.90                 # Correlation cutoff
 HOLDOUT           <- 70                   # Holdout percentage for training set                  
 FREQCUT           <- 99/1                 # To remove zero variance fields
 FOREST_SIZE       <- 1000                 # Number of trees in the forest
-LOAD_MODEL        <- TRUE                 # If false, script will train a new model. Otherwise, will load existing saved model.
+LOAD_MODEL        <- TRUE                # If false, script will train a new model. Otherwise, will load existing saved model.
 
 NN_BATCH_SIZE     <- 15                   # Batch size for MLP Model Fitting
 NN_OPTIMISER      <- "adam"               # Name of the optimization algorithm used for MLP Model Fitting
@@ -87,12 +87,12 @@ cat("\014")
 library(pacman)
 pacman::p_load(char=MYLIBRARIES,install=TRUE,character.only=TRUE)
 
-#Load additional R script files provide for this lab
+#Load additional R script files required for this project
 source("employee-attrition_model_functions.R")
 source("employee_attrition_exploration.R")
 source("employee-attrition_preprocessing.R")
 
-#Set the seed for the project, so randomization are consistent between runs.
+#Set the seed for the project, so randomization is consistent between runs.
 set.seed(123)
 
 
@@ -105,7 +105,7 @@ set.seed(123)
 #
 # OUTPUT      :   None
 #
-# Keeps all objects as local to this function
+# Keeps all objects local to this function
 # ************************************************
 main<-function(){
   
@@ -123,12 +123,12 @@ main<-function(){
   
   # Return a list containing two data frames, one for training models, and one for testing models.
   holdoutDataset <- createHoldoutDataset(preprocessedDataset, HOLDOUT)
-
+  
   # Take the pre-processed dataset defined above and stratify it, so that is ready for 
   # streatified cross validation.
   stratifiedData <- stratifyDataset(preprocessedDataset,OUTPUT_FIELD,K_FOLDS)
   
-    
+  
   
   
   # All model training / loading is below. For ease of review, we recommend un-commenting one model at a time,
@@ -143,39 +143,82 @@ main<-function(){
   
   # The model immediately below is an MLP using a simple holdout method for training and testing.
   #*****************************************************************************************************************
-
-  #MLP_With_Holdout <- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD,i = 999, LOAD_MODEL)
+  
+  #MLP_With_Holdout <- train_MLP_Model(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD, i = 999, LOAD_MODEL)
   
   #*****************************************************************************************************************
   
-
+  
   # This next model is again an MLP but this time is has been trained through stratified cross validation.
   # This method splits the dataset up into N bins, and return the mean averages of the N models trained on the bins.
   #*****************************************************************************************************************
   
-  #MLP_Stratified_Cross_Val <- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,LOAD_MODEL,plot=FALSE)
+  MLP_Stratified_Cross_Val <- kFoldModel(train_MLP_Model,stratifiedData,OUTPUT_FIELD,LOAD_MODEL,plot=FALSE)
   
   #*****************************************************************************************************************
   
   
-  # This model trains a forest of decision trees using the holdout method.
+  # This code trains a random forest model using the holdout method.
   #*****************************************************************************************************************  
   
-  #Forest_With_Holdout <- createForest(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD, i = 999, LOAD_MODEL, FOREST_SIZE)
+  #Forest_With_Holdout <- createAndEvaluateForest(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD, LOAD_MODEL, FOREST_SIZE, i = 999, showInViewer=T)
   
   #*****************************************************************************************************************
   
   
-  #This model trains a forest of decision trees using the same method of cross validation as the MLP above.
+  # This code trains random forest models using stratified cross validation.
+  #*****************************************************************************************************************  
+  
+  #Forest_Stratified_Cross_Val <- kFoldModel(createAndEvaluateForest, stratifiedData, OUTPUT_FIELD, LOAD_MODEL, forestSize = FOREST_SIZE, plot=F)
+  
   #*****************************************************************************************************************
   
-  #Forest_Stratified_Cross_Val <- kFoldModel(createForest, stratifiedData, OUTPUT_FIELD, LOAD_MODEL, forestSize = FOREST_SIZE, plot=FALSE)
-
+  
+  # The problem with using a random forest, is that you cannot pull rules from the models
+  
+  
+  # This code trains a decision tree model using the holdout method.
+  #*****************************************************************************************************************  
+  
+  #Tree_With_Holdout <- createAndEvaluateDT(holdoutDataset$training,holdoutDataset$test,OUTPUT_FIELD, LOAD_MODEL, FOREST_SIZE, i = 999, showInViewer = T)
+  
   #*****************************************************************************************************************
   
   
+  # Uncomment below to create decision trees and print the measures. Also prints the rules generated by the first fold
+  #*****************************************************************************************************************
+  
+  #kfoldTree <- kFoldModel(createAndEvaluateDT, stratifiedData, OUTPUT_FIELD, LOAD_MODEL, plot=F)
+  
+  #*****************************************************************************************************************
   
   
+  # The trees formed from the processed dataset produces rules that were derived from normalised data
+  # It would be better to "de-normalise" the values in these rules. Alternatively, as decision trees are known
+  # to work well without preprocessing, create a decision tree on a preprocessed dataset
+  # This will require recreating a new stratified dataset with little processing applied to it
+  
+  # For whataver reason, the C5 decision tree cannot be created if the Over18 column is present
+  # It has nothing to do with the values in the column, and also nothing to do with the name of the column
+  
+  # This code trains a random forest model using the holdout method.
+  #*****************************************************************************************************************  
+  
+  #rawDataset = select(originalDataset, -"Over18")
+  #rawHoldoutDataset <- createHoldoutDataset(rawDataset, HOLDOUT)
+  #Raw_Tree_With_Holdout <- createAndEvaluateDT(rawHoldoutDataset$training,rawHoldoutDataset$test,ORIGINAL_OUTPUT_FIELD, LOAD_MODEL, FOREST_SIZE, i = 999, classLabelChar = 'Yes', showInViewer = T, fileName = "_rdt_")
+  
+  #*****************************************************************************************************************
+ 
+   
+  # Uncomment below to create raw decision trees and print the measures. Also prints the rules generated by the first fold
+  #*****************************************************************************************************************
+  #
+  #rawDataset = select(originalDataset, -"Over18")
+  #rawStratifiedDataset <- stratifyDataset(rawDataset, ORIGINAL_OUTPUT_FIELD, K_FOLDS)
+  #kfoldRawTree <- kFoldModel(createAndEvaluateDT, rawStratifiedDataset, ORIGINAL_OUTPUT_FIELD, LOAD_MODEL, classLabelChar = "Yes", fileName = "_rdt_", plot=F)
+  
+  #*****************************************************************************************************************
 }
 
 # Run the main function.
